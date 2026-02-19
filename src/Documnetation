@@ -1,0 +1,240 @@
+Finance Tracker + Splitwise Clone
+🚀 Phase 1 Report — Foundation & Infrastructure Setup
+🎯 Objective of Phase 1
+
+To establish a production-ready backend foundation before implementing business logic.
+
+Phase 1 focused on:
+
+Project setup
+
+Environment configuration
+
+Containerization
+
+Dependency management
+
+Clean architecture preparation
+
+🏗️ 1️⃣ Technology Stack Finalized
+Component	Technology Chosen	Reason
+Backend	Spring Boot 3.5.10	Stable, production-ready
+Java	Java 21 (LTS)	Modern LTS version
+Database	PostgreSQL 15	Strong relational DB
+Containerization	Docker	Environment consistency
+Build Tool	Maven	Standard Spring build system
+🧱 2️⃣ Backend Project Initialization
+
+Project generated using Spring Initializr with:
+
+Selected Dependencies
+
+Spring Web
+
+Spring Data JPA
+
+PostgreSQL Driver
+
+Spring Security
+
+Validation
+
+Lombok
+
+Spring Boot DevTools
+
+Spring Mail
+
+Additionally:
+
+JWT dependency added manually (jjwt 0.11.5)
+
+📂 3️⃣ Project Architecture Structure
+
+We implemented a feature-based modular structure, instead of a flat layer structure.
+
+Base Package:
+com.pranav.financetracker
+
+Feature-Based Structure:
+auth/
+user/
+category/
+expense/
+group/
+split/
+settlement/
+friend/
+savings/
+budget/
+analytics/
+email/
+scheduler/
+config/
+common/
+
+
+Each feature will contain:
+
+controller/
+
+service/
+
+repository/
+
+entity/
+
+dto/
+
+Why Feature-Based?
+
+Scalable for large systems
+
+Easier maintenance
+
+Clear domain separation
+
+Industry-level architecture
+
+🐳 4️⃣ Database Containerization
+
+PostgreSQL was containerized using Docker.
+
+docker-compose.yml created at project root.
+
+Configuration includes:
+
+PostgreSQL 15 image
+
+Database: finance_tracker
+
+Username: postgres
+
+Password: postgres
+
+Persistent volume for data
+
+Database started using:
+
+docker compose up -d
+
+
+This ensures:
+
+No local DB installation required
+
+Reproducible environment
+
+Easy future deployment
+
+⚙️ 5️⃣ Application Configuration
+
+Created and configured application.yml with:
+
+PostgreSQL datasource connection
+
+Hibernate configuration
+
+SQL logging
+
+JWT configuration
+
+Mail configuration (SMTP)
+
+Server port configuration
+
+🔐 6️⃣ Java 21 Setup & Environment Configuration
+
+System was configured to use:
+
+JDK 21 (LTS)
+
+Steps included:
+
+Installing JDK 21
+
+Setting JAVA_HOME system variable
+
+Updating PATH
+
+Verifying using:
+
+java -version
+mvn -v
+
+
+Ensured Maven compiles using Java 21.
+
+🛠️ 7️⃣ Scheduling Enabled
+
+Spring scheduling enabled using:
+
+@EnableScheduling
+
+
+No additional dependency required.
+
+This prepares system for:
+
+Weekly summary emails
+
+Future background jobs
+
+📦 8️⃣ JWT Setup Prepared
+
+JWT dependencies added:
+
+jjwt-api
+
+jjwt-impl
+
+jjwt-jackson
+
+System now ready for:
+
+Token-based authentication
+
+Secure APIs
+
+✅ 9️⃣ Build Verification
+
+Project successfully compiled using:
+
+mvn clean install
+
+
+Application started successfully.
+
+Database connection verified.
+
+Docker container running correctly.
+
+🔥 Key Achievements of Phase 1
+
+Production-grade project structure
+
+Containerized database
+
+Java 21 environment configured
+
+Secure-ready backend setup
+
+Scheduling ready
+
+Mail integration ready
+
+JWT dependency integrated
+
+Clean modular architecture established
+
+🧠 Architectural Decisions Taken
+
+Used Java 21 (LTS) instead of experimental versions.
+
+Avoided Spring Boot SNAPSHOT versions.
+
+Used Docker from Day 1.
+
+Chose feature-based modular architecture.
+
+Prepared JWT and Mail early for future integration.
