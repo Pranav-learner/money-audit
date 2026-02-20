@@ -26,10 +26,9 @@ public class CategoryService {
 
     public List<CategoryResponse> getAllCategories(){
 
-        String userEmail = securityUtils.getCurrentUserEmail();
+        User user = securityUtils.getCurrentUser();
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()-> new RuntimeException("User not Found"));
+
 
         return categoryRepository
                 .findByUserOrIsSystemTrue(user)
@@ -45,10 +44,9 @@ public class CategoryService {
 
     public CategoryResponse createCategory(CreateCategoryRequest request) {
 
-        String  userEmail = securityUtils.getCurrentUserEmail();
+        User  user = securityUtils.getCurrentUser();
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()-> new RuntimeException("User not Found"));
+
 
         if (categoryRepository.existsByNameAndUser(request.getName(), user)) {
             throw new RuntimeException("Category already exists");
@@ -67,10 +65,8 @@ public class CategoryService {
 
     public void deleteCategory(UUID id) {
 
-        String  userEmail = securityUtils.getCurrentUserEmail();
+        User  user = securityUtils.getCurrentUser();
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()-> new RuntimeException("User not Found"));
 
         Category category = categoryRepository
                 .findById(id)
