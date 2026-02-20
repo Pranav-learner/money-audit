@@ -1,0 +1,24 @@
+package com.Pranav.finance_tracker.group.repository;
+
+import com.Pranav.finance_tracker.group.entity.GroupExpense;
+import com.Pranav.finance_tracker.group.entity.GroupExpenseSplit;
+import com.Pranav.finance_tracker.user.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseSplit, UUID> {
+    List<GroupExpenseSplit> findByGroupExpense(GroupExpense expense);
+
+    List<GroupExpenseSplit> findByUser(User user);
+
+    @Query("SELECT s FROM GroupExpenseSplit s WHERE s.expense.group.id = :groupId")
+    List<GroupExpenseSplit> findByExpenseGroupId(@Param("groupId") UUID groupId);
+
+    List<GroupExpenseSplit> findByExpense(GroupExpense expense);
+
+    void deleteByExpense(GroupExpense expense);
+}
