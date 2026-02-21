@@ -1,8 +1,7 @@
-package com.Pranav.finance_tracker.group.service;
+package com.Pranav.finance_tracker.expense.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
 import com.Pranav.finance_tracker.group.dto.CreateGroupExpenseRequest;
-import com.Pranav.finance_tracker.group.dto.CreateGroupRequest;
 import com.Pranav.finance_tracker.group.dto.SplitDetail;
 import com.Pranav.finance_tracker.group.dto.UpdateGroupExpenseRequest;
 import com.Pranav.finance_tracker.group.entity.Group;
@@ -14,7 +13,7 @@ import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
-import com.Pranav.finance_tracker.group.repository.PaymentRepository;
+import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -30,7 +29,7 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
-public class CreateGroupExpenseService {
+public class GroupExpenseService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final GroupExpenseRepository groupExpenseRepository;
@@ -49,7 +48,6 @@ public class CreateGroupExpenseService {
 
         validateUserIsGroupMember(group, currenntUser);
 
-        // Validate total amount is positive
         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Total amount must be positive");
         }
@@ -57,31 +55,21 @@ public class CreateGroupExpenseService {
         GroupExpense expense = createExpense(request,group, currenntUser);
 
         switch (request.getSplitType()) {
-
             case EQUAL -> handleEqualSplit(expense, group);
-
             case UNEQUAL -> handleUnequalSplit(expense, group, request.getSplits());
-
             case PERCENTAGE -> handlePercentageSplit(expense,group,request.getSplits());
         }
-
     }
 
     private void validateUserIsGroupMember(Group group, User user) {
-
-        boolean isMember = groupMemberRepository
-                .existsByGroupAndUser(group, user);
-
+        boolean isMember = groupMemberRepository.existsByGroupAndUser(group, user);
         if (!isMember) {
             throw new RuntimeException("User not part of this group");
         }
     }
 
     private GroupExpense createExpense(
-            CreateGroupExpenseRequest request,
-            Group group,
-            User currentUser
-    ) {
+            CreateGroupExpenseRequest request, Group group, User currentUser) {
 
         GroupExpense expense = GroupExpense.builder()
                 .title(request.getTitle())
@@ -97,20 +85,14 @@ public class CreateGroupExpenseService {
     }
 
     private void handleEqualSplit(GroupExpense expense, Group group){
-
         List<GroupMember> members = groupMemberRepository.findByGroup(group);
-
         if(members.isEmpty()){
             throw new RuntimeException("No members in group");
         }
 
         BigDecimal total = expense.getTotalAmount();
-
         BigDecimal splitAmount = total.divide(
-                BigDecimal.valueOf(members.size()),
-                2,
-                RoundingMode.HALF_UP
-        );
+                BigDecimal.valueOf(members.size()), 2, RoundingMode.HALF_UP);
 
         for( GroupMember member : members) {
             GroupExpenseSplit split = GroupExpenseSplit.builder()
@@ -118,37 +100,27 @@ public class CreateGroupExpenseService {
                     .user(member.getUser())
                     .amountOwed(splitAmount)
                     .build();
-
             groupExpenseSplitRepository.save(split);
         }
     }
 
     private void handleUnequalSplit(
-            GroupExpense expense,
-            Group group,
-            List<SplitDetail> splits
-    ) {
+            GroupExpense expense, Group group, List<SplitDetail> splits) {
 
         if (splits == null || splits.isEmpty()) {
             throw new RuntimeException("Split details required");
         }
 
-        List<GroupMember> members =
-                groupMemberRepository.findByGroup(group);
-
+        List<GroupMember> members = groupMemberRepository.findByGroup(group);
         if (splits.size() != members.size()) {
             throw new RuntimeException("All group members must be included");
         }
 
         BigDecimal totalCalculated = BigDecimal.ZERO;
-
         for (SplitDetail detail : splits) {
-
-            if (detail.getAmount() == null ||
-                    detail.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            if (detail.getAmount() == null || detail.getAmount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new RuntimeException("Split amount cannot be negative");
             }
-
             totalCalculated = totalCalculated.add(detail.getAmount());
         }
 
@@ -157,14 +129,11 @@ public class CreateGroupExpenseService {
         }
 
         for (SplitDetail detail : splits) {
-
             User user = userRepository.findById(detail.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Validate split user is a group member
             if (!groupMemberRepository.existsByGroupAndUser(group, user)) {
-                throw new RuntimeException(
-                        "Cannot split with non-member: " + user.getName());
+                throw new RuntimeException("Cannot split with non-member: " + user.getName());
             }
 
             GroupExpenseSplit split = GroupExpenseSplit.builder()
@@ -172,39 +141,29 @@ public class CreateGroupExpenseService {
                     .user(user)
                     .amountOwed(detail.getAmount())
                     .build();
-
             groupExpenseSplitRepository.save(split);
         }
     }
 
     private void handlePercentageSplit(
-            GroupExpense expense,
-            Group group,
-            List<SplitDetail> splits
-    ) {
+            GroupExpense expense, Group group, List<SplitDetail> splits) {
 
         if (splits == null || splits.isEmpty()) {
             throw new RuntimeException("Split details required");
         }
 
-        List<GroupMember> members =
-                groupMemberRepository.findByGroup(group);
-
+        List<GroupMember> members = groupMemberRepository.findByGroup(group);
         if (splits.size() != members.size()) {
             throw new RuntimeException("All group members must be included");
         }
 
         BigDecimal totalPercentage = BigDecimal.ZERO;
-
         for (SplitDetail detail : splits) {
-
             if (detail.getPercentage() == null ||
                     detail.getPercentage().compareTo(BigDecimal.ZERO) < 0 ||
                     detail.getPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
-                throw new RuntimeException(
-                        "Percentage must be between 0 and 100");
+                throw new RuntimeException("Percentage must be between 0 and 100");
             }
-
             totalPercentage = totalPercentage.add(detail.getPercentage());
         }
 
@@ -214,18 +173,14 @@ public class CreateGroupExpenseService {
 
         BigDecimal totalAmount = expense.getTotalAmount();
         BigDecimal calculatedTotal = BigDecimal.ZERO;
-
         List<GroupExpenseSplit> splitEntities = new ArrayList<>();
 
         for (SplitDetail detail : splits) {
-
             User user = userRepository.findById(detail.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Validate split user is a group member
             if (!groupMemberRepository.existsByGroupAndUser(group, user)) {
-                throw new RuntimeException(
-                        "Cannot split with non-member: " + user.getName());
+                throw new RuntimeException("Cannot split with non-member: " + user.getName());
             }
 
             BigDecimal amount = totalAmount
@@ -234,22 +189,17 @@ public class CreateGroupExpenseService {
 
             calculatedTotal = calculatedTotal.add(amount);
 
-            splitEntities.add(
-                    GroupExpenseSplit.builder()
-                            .expense(expense)
-                            .user(user)
-                            .amountOwed(amount)
-                            .build()
-            );
+            splitEntities.add(GroupExpenseSplit.builder()
+                    .expense(expense)
+                    .user(user)
+                    .amountOwed(amount)
+                    .build());
         }
 
-        // Remainder correction (important)
         BigDecimal difference = totalAmount.subtract(calculatedTotal);
-
         if (difference.compareTo(BigDecimal.ZERO) != 0) {
             splitEntities.get(0).setAmountOwed(
-                    splitEntities.get(0).getAmountOwed().add(difference)
-            );
+                    splitEntities.get(0).getAmountOwed().add(difference));
         }
 
         groupExpenseSplitRepository.saveAll(splitEntities);
@@ -268,29 +218,24 @@ public class CreateGroupExpenseService {
 
         validateUserIsGroupMember(group, currentUser);
 
-        // Block editing if payments exist in this group
         if (paymentRepository.existsByGroupId(group.getId())) {
             throw new RuntimeException(
                     "Cannot edit expense: payments already exist in this group. " +
                     "Editing would break settled balances.");
         }
 
-        // Validate total amount is positive
         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Total amount must be positive");
         }
 
-        // Delete old splits
         groupExpenseSplitRepository.deleteByExpense(expense);
 
-        // Update expense fields
         expense.setTitle(request.getTitle());
         expense.setTotalAmount(request.getTotalAmount());
         expense.setExpenseDate(request.getExpenseDate());
         expense.setSplitType(request.getSplitType());
         groupExpenseRepository.save(expense);
 
-        // Recreate splits
         switch (request.getSplitType()) {
             case EQUAL -> handleEqualSplit(expense, group);
             case UNEQUAL -> handleUnequalSplit(expense, group, request.getSplits());
@@ -311,14 +256,12 @@ public class CreateGroupExpenseService {
 
         validateUserIsGroupMember(group, currentUser);
 
-        // Block deletion if payments exist in this group
         if (paymentRepository.existsByGroupId(group.getId())) {
             throw new RuntimeException(
                     "Cannot delete expense: payments already exist in this group. " +
                     "Deleting would break settled balances.");
         }
 
-        // Delete splits first, then the expense
         groupExpenseSplitRepository.deleteByExpense(expense);
         groupExpenseRepository.delete(expense);
     }

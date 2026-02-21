@@ -8,6 +8,7 @@ import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
+import com.Pranav.finance_tracker.expense.service.GroupBalanceService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
-    private final BalanceService balanceService;
+    private final GroupBalanceService groupBalanceService;
 
     public GroupResponse createGroup(CreateGroupRequest request, User currentUser){
 
@@ -86,7 +87,7 @@ public class GroupService {
         }
 
         // 🔒 Lock: cannot remove member if group has unsettled balances
-        if (balanceService.hasUnsettledBalances(groupId)) {
+        if (groupBalanceService.hasUnsettledBalances(groupId)) {
             throw new RuntimeException(
                     "Cannot remove member: group has unsettled balances. " +
                     "All debts must be settled first.");
@@ -102,7 +103,7 @@ public class GroupService {
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         // 🔒 Lock: cannot delete group if balances are not zero
-        if (balanceService.hasUnsettledBalances(groupId)) {
+        if (groupBalanceService.hasUnsettledBalances(groupId)) {
             throw new RuntimeException(
                     "Cannot delete group: unsettled balances exist. " +
                     "All debts must be settled first.");
