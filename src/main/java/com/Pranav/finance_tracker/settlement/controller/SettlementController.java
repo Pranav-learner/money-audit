@@ -1,7 +1,7 @@
-package com.Pranav.finance_tracker.group.controller;
+package com.Pranav.finance_tracker.settlement.controller;
 
-import com.Pranav.finance_tracker.group.entity.Settlement;
-import com.Pranav.finance_tracker.group.repository.SettlementRepository;
+import com.Pranav.finance_tracker.settlement.entity.Settlement;
+import com.Pranav.finance_tracker.settlement.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

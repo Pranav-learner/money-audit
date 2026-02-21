@@ -1,6 +1,6 @@
-package com.Pranav.finance_tracker.group.repository;
+package com.Pranav.finance_tracker.settlement.repository;
 
-import com.Pranav.finance_tracker.group.entity.Settlement;
+import com.Pranav.finance_tracker.settlement.entity.Settlement;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

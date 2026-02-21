@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
 public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseSplit, UUID> {
+
     List<GroupExpenseSplit> findByGroupExpense(GroupExpense expense);
 
     List<GroupExpenseSplit> findByUser(User user);
@@ -21,4 +23,11 @@ public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseS
     List<GroupExpenseSplit> findByExpense(GroupExpense expense);
 
     void deleteByExpense(GroupExpense expense);
+
+    // ── SQL aggregation for direct balance — what fromUser owes toUser ──
+
+    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+            "WHERE s.expense.group IS NULL " +
+            "AND s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
+    BigDecimal sumDirectDebt(@Param("fromUser") UUID fromUser, @Param("toUser") UUID toUser);
 }

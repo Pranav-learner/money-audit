@@ -1,5 +1,6 @@
-package com.Pranav.finance_tracker.group.entity;
+package com.Pranav.finance_tracker.payment.entity;
 
+import com.Pranav.finance_tracker.group.entity.Group;
 import com.Pranav.finance_tracker.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,8 +34,8 @@ public class Payment {
     private BigDecimal amount;
 
     @ManyToOne
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    @JoinColumn(name = "group_id")
+    private Group group;   // null → direct (1-to-1) payment
 
     private String note;
 

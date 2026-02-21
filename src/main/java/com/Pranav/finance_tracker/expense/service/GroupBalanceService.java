@@ -1,4 +1,4 @@
-package com.Pranav.finance_tracker.group.service;
+package com.Pranav.finance_tracker.expense.service;
 
 import com.Pranav.finance_tracker.group.dto.BalanceSummaryResponse;
 import com.Pranav.finance_tracker.group.dto.GroupBalanceResponse;
@@ -6,11 +6,11 @@ import com.Pranav.finance_tracker.group.dto.MemberBalanceDetail;
 import com.Pranav.finance_tracker.group.entity.GroupExpense;
 import com.Pranav.finance_tracker.group.entity.GroupExpenseSplit;
 import com.Pranav.finance_tracker.group.entity.GroupMember;
-import com.Pranav.finance_tracker.group.entity.Payment;
+import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
-import com.Pranav.finance_tracker.group.repository.PaymentRepository;
+import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,14 +24,12 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class BalanceService {
+public class GroupBalanceService {
 
     private final GroupMemberRepository groupMemberRepository;
     private final GroupExpenseRepository groupExpenseRepository;
     private final GroupExpenseSplitRepository splitRepository;
     private final PaymentRepository paymentRepository;
-
-    // ── Existing: per-user net balance for the whole group ──
 
     public List<GroupBalanceResponse> calculateGroupBalance(UUID groupId) {
 
@@ -53,16 +51,11 @@ public class BalanceService {
         return response;
     }
 
-    // ── NEW: Balance Summary for current user ──
-
     public BalanceSummaryResponse getBalanceSummary(UUID groupId, User currentUser) {
 
         UUID myId = currentUser.getId();
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
 
-        // Build per-pair net: how much each member owes/is owed by currentUser
-        // pairNet positive → that user owes currentUser
-        // pairNet negative → currentUser owes that user
         Map<UUID, BigDecimal> pairNet = new HashMap<>();
         Map<UUID, String> nameMap = new HashMap<>();
 
@@ -74,34 +67,28 @@ public class BalanceService {
             }
         }
 
-        // ─ Expenses: payer paid, each split user owes ─
         List<GroupExpense> expenses = groupExpenseRepository.findByGroupId(groupId);
         List<GroupExpenseSplit> splits = splitRepository.findByExpenseGroupId(groupId);
 
-        // For each expense, the payer is owed by each split user
         for (GroupExpense expense : expenses) {
             UUID payerId = expense.getPaidBy().getId();
 
-            // Find splits for this expense
             for (GroupExpenseSplit split : splits) {
                 if (!split.getExpense().getId().equals(expense.getId())) continue;
 
                 UUID owerId = split.getUser().getId();
-                if (payerId.equals(owerId)) continue; // skip self-split
+                if (payerId.equals(owerId)) continue;
 
                 BigDecimal amount = split.getAmountOwed();
 
                 if (payerId.equals(myId)) {
-                    // I paid, ower owes me → positive for ower
                     pairNet.merge(owerId, amount, BigDecimal::add);
                 } else if (owerId.equals(myId)) {
-                    // Someone else paid, I owe them → negative for payer
                     pairNet.merge(payerId, amount.negate(), BigDecimal::add);
                 }
             }
         }
 
-        // ─ Payments: fromUser paid toUser, reduces debt ─
         List<Payment> payments = paymentRepository.findByGroupId(groupId);
 
         for (Payment payment : payments) {
@@ -110,15 +97,12 @@ public class BalanceService {
             BigDecimal amount = payment.getAmount();
 
             if (fromId.equals(myId)) {
-                // I paid someone → reduces what I owe them (more negative → less negative)
                 pairNet.merge(toId, amount.negate(), BigDecimal::add);
             } else if (toId.equals(myId)) {
-                // Someone paid me → reduces what they owe me (more positive → less positive)
                 pairNet.merge(fromId, amount.negate(), BigDecimal::add);
             }
         }
 
-        // ─ Build response ─
         BigDecimal netBalance = BigDecimal.ZERO;
         List<MemberBalanceDetail> balances = new ArrayList<>();
 
@@ -157,12 +141,8 @@ public class BalanceService {
                 .build();
     }
 
-    // ── NEW: Check if group has unsettled balances ──
-
     public boolean hasUnsettledBalances(UUID groupId) {
-
         Map<UUID, BigDecimal> netMap = buildNetBalanceMap(groupId, null);
-
         for (BigDecimal net : netMap.values()) {
             if (net.compareTo(BigDecimal.ZERO) != 0) {
                 return true;
@@ -170,8 +150,6 @@ public class BalanceService {
         }
         return false;
     }
-
-    // ── Internal: compute net balance per user ──
 
     private Map<UUID, BigDecimal> buildNetBalanceMap(UUID groupId, Map<UUID, String> nameMap) {
 
@@ -219,8 +197,6 @@ public class BalanceService {
         return netMap;
     }
 
-    // ── NEW: Compute debt between two specific users ──
-
     /**
      * Returns how much fromUser owes toUser in this group.
      * Positive = fromUser owes toUser that amount.
@@ -234,8 +210,6 @@ public class BalanceService {
 
         BigDecimal debt = BigDecimal.ZERO;
 
-        // Expenses: if toUser paid and fromUser has a split → fromUser owes toUser
-        //           if fromUser paid and toUser has a split → toUser owes fromUser (reduces debt)
         for (GroupExpense expense : expenses) {
             UUID payerId = expense.getPaidBy().getId();
 
@@ -243,19 +217,16 @@ public class BalanceService {
                 if (!split.getExpense().getId().equals(expense.getId())) continue;
 
                 UUID owerId = split.getUser().getId();
-                if (payerId.equals(owerId)) continue; // skip self-split
+                if (payerId.equals(owerId)) continue;
 
                 if (payerId.equals(toUserId) && owerId.equals(fromUserId)) {
-                    // toUser paid, fromUser owes → increases debt
                     debt = debt.add(split.getAmountOwed());
                 } else if (payerId.equals(fromUserId) && owerId.equals(toUserId)) {
-                    // fromUser paid, toUser owes → decreases debt
                     debt = debt.subtract(split.getAmountOwed());
                 }
             }
         }
 
-        // Payments: fromUser→toUser reduces debt, toUser→fromUser increases debt
         for (Payment payment : payments) {
             UUID pFromId = payment.getFromUser().getId();
             UUID pToId = payment.getToUser().getId();
@@ -267,7 +238,6 @@ public class BalanceService {
             }
         }
 
-        // If debt is negative, fromUser doesn't owe toUser
         return debt.max(BigDecimal.ZERO);
     }
 }

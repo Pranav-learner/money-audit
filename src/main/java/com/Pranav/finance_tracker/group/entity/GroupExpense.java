@@ -40,8 +40,12 @@ public class GroupExpense {
     private SplitType splitType;
 
     @ManyToOne
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    @JoinColumn(name = "group_id")
+    private Group group;   // null → direct (1-to-1) expense
+
+    @ManyToOne
+    @JoinColumn(name = "other_user_id")
+    private User otherUser;  // only for direct expenses — the non-payer participant
 
     private LocalDateTime createdAt;
 }
