@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.payment.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
+import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.group.dto.CreatePaymentRequest;
 import com.Pranav.finance_tracker.group.entity.Group;
 import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
@@ -30,6 +31,7 @@ public class GroupPaymentService {
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final GroupBalanceService groupBalanceService;
+    private final EmailService emailService;
 
     @Transactional
     public String createPayment(CreatePaymentRequest request) {
@@ -88,6 +90,14 @@ public class GroupPaymentService {
                 .build();
 
         paymentRepository.save(payment);
+
+        // Send Notification
+        String subject = "Payment Received: " + payment.getAmount();
+        String body = String.format("Hello %s,\n\n%s has paid you %.2f in group '%s'.\nNote: %s",
+                toUser.getName(), fromUser.getName(), payment.getAmount(),
+                group.getName(), (payment.getNote() != null ? payment.getNote() : "No note"));
+        emailService.sendEmail(toUser, subject, body);
+
         return "Payment recorded successfully";
     }
 

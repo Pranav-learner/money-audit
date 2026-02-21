@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.expense.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
+import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.expense.dto.CreateDirectExpenseRequest;
 import com.Pranav.finance_tracker.group.entity.GroupExpense;
 import com.Pranav.finance_tracker.group.entity.GroupExpenseSplit;
@@ -25,6 +26,7 @@ public class DirectExpenseService {
     private final GroupExpenseSplitRepository splitRepository;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final EmailService emailService;
 
     @Transactional
     public String createExpense(CreateDirectExpenseRequest request) {
@@ -62,6 +64,12 @@ public class DirectExpenseService {
             case UNEQUAL -> handleUnequalSplit(expense, currentUser, otherUser, request);
             case PERCENTAGE -> handlePercentageSplit(expense, currentUser, otherUser, request);
         }
+
+        // Send Notification
+        String subject = "New Direct Expense: " + expense.getTitle();
+        String body = String.format("Hello %s,\n\n%s has added a direct expense: '%s' of %.2f.",
+                otherUser.getName(), currentUser.getName(), expense.getTitle(), expense.getTotalAmount());
+        emailService.sendEmail(otherUser, subject, body);
 
         return "Direct expense created successfully";
     }

@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.friend.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
+import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.friend.dto.FriendResponse;
 import com.Pranav.finance_tracker.friend.dto.UserSearchResponse;
 import com.Pranav.finance_tracker.friend.entity.Friendship;
@@ -23,6 +24,7 @@ public class FriendshipService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final EmailService emailService;
 
     // ── Search users by name ──
 
@@ -92,6 +94,13 @@ public class FriendshipService {
                 .build();
 
         friendshipRepository.save(friendship);
+
+        // Send Notification
+        String subject = "New Friend Request on Finance Tracker";
+        String body = String.format("Hello %s,\n\n%s has sent you a friend request. Log in to accept it!",
+                receiver.getName(), sender.getName());
+        emailService.sendEmail(receiver, subject, body);
+
         return "Friend request sent to " + receiver.getName();
     }
 

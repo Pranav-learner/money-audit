@@ -21,5 +21,33 @@ public interface SavingRepository extends JpaRepository<Saving, UUID> {
 
     @Query("SELECT SUM(s.amount) FROM Saving s WHERE s.user = :user")
     BigDecimal sumByUser(@Param("user") User user);
+
+    @Query("""
+        SELECT SUM(s.amount) FROM Saving s 
+        WHERE s.user = :user 
+        AND FUNCTION('MONTH', s.savingDate) = :month 
+        AND FUNCTION('YEAR', s.savingDate) = :year
+    """)
+    BigDecimal sumByUserAndMonthAndYear(
+            @Param("user") User user,
+            @Param("month") int month,
+            @Param("year") int year
+    );
+
+    @Query("""
+        SELECT new com.Pranav.finance_tracker.analytics.dto.SavingTrendItem(
+            FUNCTION('MONTH', s.savingDate),
+            SUM(s.amount)
+        )
+        FROM Saving s
+        WHERE s.user = :user
+        AND FUNCTION('YEAR', s.savingDate) = :year
+        GROUP BY FUNCTION('MONTH', s.savingDate)
+        ORDER BY FUNCTION('MONTH', s.savingDate)
+    """)
+    List<com.Pranav.finance_tracker.analytics.dto.SavingTrendItem> getMonthlyTrend(
+            @Param("user") User user,
+            @Param("year") int year
+    );
 }
 
