@@ -49,5 +49,6 @@ public interface SavingRepository extends JpaRepository<Saving, UUID> {
             @Param("user") User user,
             @Param("year") int year
     );
+
 }
 

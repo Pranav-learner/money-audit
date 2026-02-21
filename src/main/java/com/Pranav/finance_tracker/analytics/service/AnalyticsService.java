@@ -72,7 +72,12 @@ public class AnalyticsService {
             ? spentVal.multiply(BigDecimal.valueOf(100)).divide(limit, 0, RoundingMode.HALF_UP).intValue()
             : 0;
 
-        String status = spentVal.compareTo(limit) > 0 ? "OVER_BUDGET" : "NORMAL";
+        String status = "NORMAL";
+        if (spentVal.compareTo(limit) > 0) {
+            status = "OVER_BUDGET";
+        } else if (percentage >= 80) {
+            status = "NEAR_LIMIT";
+        }
 
         return BudgetUsageResponse.builder()
                 .category(budget.getCategory().getName())
@@ -154,5 +159,66 @@ public class AnalyticsService {
                 .youAreOwed(netOwed)
                 .netBalance(netOwed.subtract(netOwe))
                 .build();
+    }
+
+    public DashboardResponse getDashboardSummary(User user) {
+        LocalDate now = LocalDate.now();
+        int month = now.getMonthValue();
+        int year = now.getYear();
+        LocalDate start = now.withDayOfMonth(1);
+        LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+
+        BigDecimal totalSavings = savingRepository.sumByUserAndMonthAndYear(user, month, year);
+        BigDecimal totalSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
+        
+        List<BudgetUsageResponse> budgetUsage = getBudgetUsage(user, month, year);
+        List<BudgetUsageResponse> alerts = budgetUsage.stream()
+                .filter(b -> !"NORMAL".equals(b.getStatus()))
+                .toList();
+
+        List<CategoryDistributionResponse> distribution = expenseRepository.getCategoryDistribution(user, start, end);
+        List<SavingTrendItem> trend = expenseRepository.getMonthlySpendingTrend(user, year);
+
+        BalanceOverviewResponse balance = getBalanceOverview(user);
+        List<WeeklyTrendItem> weeklyTrend = getWeeklyTrend(user);
+
+        return DashboardResponse.builder()
+                .totalSpentMonth(totalSpent != null ? totalSpent : BigDecimal.ZERO)
+                .totalSavingsMonth(totalSavings != null ? totalSavings : BigDecimal.ZERO)
+                .netBalance(balance.getNetBalance())
+                .budgetAlerts(alerts)
+                .categoryDistribution(distribution)
+                .monthlyTrend(trend)
+                .weeklyTrend(weeklyTrend)
+                .build();
+    }
+
+    private List<WeeklyTrendItem> getWeeklyTrend(User user) {
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusWeeks(8);
+        
+        List<com.Pranav.finance_tracker.expense.entity.Expense> expenses = 
+                expenseRepository.findByUserAndExpenseDateBetween(user, start, end);
+
+        // Group by week (using start of week as key)
+        Map<LocalDate, BigDecimal> weeklySums = expenses.stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getExpenseDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
+                        Collectors.mapping(
+                                com.Pranav.finance_tracker.expense.entity.Expense::getAmount,
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                        )
+                ));
+
+        // Ensure all 8 weeks are present even if zero
+        List<WeeklyTrendItem> trend = new ArrayList<>();
+        LocalDate currentWeek = start.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        
+        while (!currentWeek.isAfter(end)) {
+            trend.add(new WeeklyTrendItem(currentWeek, weeklySums.getOrDefault(currentWeek, BigDecimal.ZERO)));
+            currentWeek = currentWeek.plusWeeks(1);
+        }
+
+        return trend;
     }
 }

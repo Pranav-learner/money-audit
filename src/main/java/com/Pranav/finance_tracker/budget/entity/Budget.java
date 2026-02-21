@@ -15,6 +15,9 @@ import java.util.UUID;
                 @UniqueConstraint(
                         columnNames = {"user_id", "category_id", "month", "year"}
                 )
+        },
+        indexes = {
+                @Index(name = "idx_budget_user_month_year", columnList = "user_id, month, year")
         }
 )
 @Getter

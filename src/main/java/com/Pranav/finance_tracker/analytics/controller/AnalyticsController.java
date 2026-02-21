@@ -93,4 +93,10 @@ public class AnalyticsController {
         User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(analyticsService.getBalanceOverview(user));
     }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardResponse> getDashboardSummary() {
+        User user = securityUtils.getCurrentUser();
+        return ResponseEntity.ok(analyticsService.getDashboardSummary(user));
+    }
 }
