@@ -7,9 +7,8 @@ import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
 import com.Pranav.finance_tracker.expense.service.GroupBalanceService;
 import com.Pranav.finance_tracker.payment.entity.Payment;
-import com.Pranav.finance_tracker.settlement.entity.Settlement;
+import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
-import com.Pranav.finance_tracker.settlement.repository.SettlementRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ import java.util.UUID;
 public class GroupPaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final SettlementRepository settlementRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
@@ -90,12 +88,6 @@ public class GroupPaymentService {
                 .build();
 
         paymentRepository.save(payment);
-
-        boolean settled = checkAndSettle(group, fromUser, toUser);
-
-        if (settled) {
-            return "Payment recorded and debt fully settled!";
-        }
         return "Payment recorded successfully";
     }
 
@@ -105,46 +97,4 @@ public class GroupPaymentService {
         return paymentRepository.findByGroupId(groupId);
     }
 
-    private boolean checkAndSettle(Group group, User fromUser, User toUser) {
-
-        UUID groupId = group.getId();
-        UUID fromId = fromUser.getId();
-        UUID toId = toUser.getId();
-
-        List<Payment> paymentsFromTo = paymentRepository
-                .findByGroupIdAndFromUserIdAndToUserId(groupId, fromId, toId);
-
-        List<Payment> paymentsToFrom = paymentRepository
-                .findByGroupIdAndFromUserIdAndToUserId(groupId, toId, fromId);
-
-        BigDecimal totalFromTo = paymentsFromTo.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalToFrom = paymentsToFrom.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal netPayments = totalFromTo.subtract(totalToFrom);
-
-        if (netPayments.compareTo(BigDecimal.ZERO) == 0 && totalFromTo.compareTo(BigDecimal.ZERO) > 0) {
-
-            Settlement settlement = Settlement.builder()
-                    .group(group)
-                    .user1(fromUser)
-                    .user2(toUser)
-                    .totalAmount(totalFromTo)
-                    .settledAt(LocalDateTime.now())
-                    .build();
-
-            settlementRepository.save(settlement);
-
-            paymentRepository.deleteByGroupIdAndFromUserIdAndToUserId(groupId, fromId, toId);
-            paymentRepository.deleteByGroupIdAndFromUserIdAndToUserId(groupId, toId, fromId);
-
-            return true;
-        }
-
-        return false;
-    }
 }
