@@ -57,4 +57,10 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
     void deleteDirectPaymentsFromTo(
             @Param("fromId") UUID fromId, @Param("toId") UUID toId);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.fromUser.id = :userId")
+    BigDecimal sumTotalPaymentsSent(@Param("userId") UUID userId);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.toUser.id = :userId")
+    BigDecimal sumTotalPaymentsReceived(@Param("userId") UUID userId);
 }

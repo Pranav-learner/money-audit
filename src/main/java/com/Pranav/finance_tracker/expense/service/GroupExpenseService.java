@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.expense.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
+import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.group.dto.CreateGroupExpenseRequest;
 import com.Pranav.finance_tracker.group.dto.SplitDetail;
 import com.Pranav.finance_tracker.group.dto.UpdateGroupExpenseRequest;
@@ -37,6 +38,7 @@ public class GroupExpenseService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final EmailService emailService;
 
     @Transactional
     public void createGroupExpense(CreateGroupExpenseRequest request ){
@@ -58,6 +60,18 @@ public class GroupExpenseService {
             case EQUAL -> handleEqualSplit(expense, group);
             case UNEQUAL -> handleUnequalSplit(expense, group, request.getSplits());
             case PERCENTAGE -> handlePercentageSplit(expense,group,request.getSplits());
+        }
+
+        // Send Notifications to all group members except payer
+        List<GroupMember> members = groupMemberRepository.findByGroup(group);
+        for (GroupMember member : members) {
+            if (!member.getUser().getId().equals(currenntUser.getId())) {
+                String subject = "New Group Expense: " + expense.getTitle();
+                String body = String.format("Hello %s,\n\nA new expense '%s' of %.2f has been added to group '%s' by %s.",
+                        member.getUser().getName(), expense.getTitle(), expense.getTotalAmount(),
+                        group.getName(), currenntUser.getName());
+                emailService.sendEmail(member.getUser(), subject, body);
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.payment.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
+import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.expense.service.DirectBalanceService;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
@@ -24,6 +25,7 @@ public class DirectPaymentService {
     private final DirectBalanceService directBalanceService;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final EmailService emailService;
 
     @Transactional
     public String createPayment(CreateDirectPaymentRequest request) {
@@ -70,6 +72,14 @@ public class DirectPaymentService {
                 .build();
 
         paymentRepository.save(payment);
+
+        // Send Notification
+        String subject = "Payment Received: " + payment.getAmount();
+        String body = String.format("Hello %s,\n\n%s has paid you %.2f directly.\nNote: %s",
+                toUser.getName(), fromUser.getName(), payment.getAmount(),
+                (payment.getNote() != null ? payment.getNote() : "No note"));
+        emailService.sendEmail(toUser, subject, body);
+
         return "Payment recorded successfully";
     }
 

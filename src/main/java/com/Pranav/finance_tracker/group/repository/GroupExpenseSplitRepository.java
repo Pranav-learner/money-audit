@@ -27,7 +27,14 @@ public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseS
     // ── SQL aggregation for direct balance — what fromUser owes toUser ──
 
     @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-            "WHERE s.expense.group IS NULL " +
-            "AND s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
+            "WHERE s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
     BigDecimal sumDirectDebt(@Param("fromUser") UUID fromUser, @Param("toUser") UUID toUser);
+
+    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+            "WHERE s.user.id = :userId AND s.expense.paidBy.id != :userId")
+    BigDecimal sumTotalOwedByUser(@Param("userId") UUID userId);
+
+    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+            "WHERE s.expense.paidBy.id = :userId AND s.user.id != :userId")
+    BigDecimal sumTotalOwedToUser(@Param("userId") UUID userId);
 }
