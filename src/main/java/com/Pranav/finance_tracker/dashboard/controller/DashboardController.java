@@ -42,7 +42,8 @@ public class DashboardController {
     public record DashboardChartsResponse(
             Object spendingOverview,
             Object categoryDistribution,
-            Object expenseTrend
+            Object expenseTrend,
+            Object budgetUsage
     ) {}
 
     public record RecentActivityResponse(
@@ -83,10 +84,14 @@ public class DashboardController {
         User user = securityUtils.getCurrentUser();
         DashboardResponse analytics = analyticsService.getDashboardSummary(user);
 
+        LocalDate now = LocalDate.now();
+        Object budgetUsage = analyticsService.getBudgetUsage(user, now.getMonthValue(), now.getYear());
+
         DashboardChartsResponse response = new DashboardChartsResponse(
                 analytics.getWeeklyTrend(),
                 analytics.getCategoryDistribution(),
-                analytics.getMonthlyTrend()
+                analytics.getMonthlyTrend(),
+                budgetUsage
         );
 
         return ResponseEntity.ok(response);
