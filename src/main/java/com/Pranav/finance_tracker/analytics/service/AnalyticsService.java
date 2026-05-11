@@ -207,6 +207,7 @@ public class AnalyticsService {
 
         // Group by week (using start of week as key)
         Map<LocalDate, BigDecimal> weeklySums = expenses.stream()
+                .filter(e -> e.getExpenseDate() != null)
                 .collect(Collectors.groupingBy(
                         e -> e.getExpenseDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
                         Collectors.mapping(

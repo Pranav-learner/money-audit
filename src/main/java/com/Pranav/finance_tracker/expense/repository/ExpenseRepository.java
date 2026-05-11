@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ExpenseRepository extends JpaRepository<Expense, Long> {
+public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     List<Expense> findByUser(User user);
     
     List<Expense> findTop5ByUserOrderByExpenseDateDesc(User user);

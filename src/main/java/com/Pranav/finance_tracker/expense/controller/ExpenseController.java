@@ -24,6 +24,7 @@ import java.util.UUID;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping
     public ResponseEntity<ExpenseResponse> createExpense(
@@ -45,7 +46,7 @@ public class ExpenseController {
             @RequestParam(required = false) UUID categoryId,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(
                 expenseService.getFilteredExpenses(user, month, categoryId)
         );
@@ -57,7 +58,7 @@ public class ExpenseController {
             @Valid  @RequestBody UpdateExpenseRequest request,
             Authentication authentication
     ){
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.ok(
                 expenseService.updateExpense(id, request, user)
@@ -69,7 +70,7 @@ public class ExpenseController {
             @PathVariable("id") UUID id,
             Authentication authentication
     ){
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         expenseService.deleteExpense(id, user);
         return ResponseEntity.noContent().build();
     }
@@ -81,7 +82,7 @@ public class ExpenseController {
             @RequestParam int month,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.ok(
                 expenseService.getMonthlyExpenses(user, year, month)
@@ -93,7 +94,7 @@ public class ExpenseController {
             @PathVariable UUID categoryId,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.ok(
                 expenseService.getExpensesByCategory(user, categoryId)
@@ -106,7 +107,7 @@ public class ExpenseController {
             @RequestParam int month,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.ok(
                 expenseService.getMonthlySummary(user, year, month)
@@ -117,7 +118,7 @@ public class ExpenseController {
     public ResponseEntity<BigDecimal> getTotalExpenses(
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(
                 expenseService.getTotalExpenses(user)
         );
@@ -127,7 +128,7 @@ public class ExpenseController {
     public ResponseEntity<List<DailyExpenseResponse>> weeklyBreakdown(
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(expenseService.getWeeklyBreakdown(user));
     }
 
@@ -135,7 +136,7 @@ public class ExpenseController {
     public ResponseEntity<MonthlyChange> monthlyTrend(
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(expenseService.getMonthlyTrend(user));
     }
 
@@ -150,7 +151,7 @@ public class ExpenseController {
             Authentication authentication
     ) {
 
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.ok(
                 expenseService.getDistribution(user, period, year, month, startDate, endDate)

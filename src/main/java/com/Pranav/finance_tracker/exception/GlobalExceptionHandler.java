@@ -25,11 +25,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        ex.printStackTrace(); // For server logs
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                         "timestamp", LocalDateTime.now(),
-                        "error", "Error",
-                        "message", ex.getMessage()
+                        "error", "Internal Server Error",
+                        "message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred"
                 ));
     }
 }

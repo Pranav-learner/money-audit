@@ -21,6 +21,7 @@ import java.util.UUID;
 public class SavingController {
 
     private final SavingService savingService;
+    private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping
     public ResponseEntity<SavingResponse> createSaving(
@@ -28,7 +29,7 @@ public class SavingController {
             Authentication authentication
     ) {
 
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(savingService.createSaving(request, user));
@@ -38,7 +39,7 @@ public class SavingController {
     public ResponseEntity<List<SavingResponse>> getSavings(
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(savingService.getAllSavings(user));
     }
 
@@ -48,7 +49,7 @@ public class SavingController {
             @RequestBody CreateSavingRequest request,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(
                 savingService.updateSaving(id, request, user)
         );
@@ -59,7 +60,7 @@ public class SavingController {
             @PathVariable UUID id,
             Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         savingService.deleteSaving(id, user);
         return ResponseEntity.noContent().build();
     }
