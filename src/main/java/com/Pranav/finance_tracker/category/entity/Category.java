@@ -20,6 +20,7 @@ public class Category {
     private UUID id;
 
     private String name;
+    private String icon;
 
     private boolean isSystem;
 

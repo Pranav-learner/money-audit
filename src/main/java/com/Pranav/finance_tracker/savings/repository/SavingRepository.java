@@ -16,6 +16,8 @@ import java.util.UUID;
 public interface SavingRepository extends JpaRepository<Saving, UUID> {
 
     List<Saving> findByUser(User user);
+    
+    List<Saving> findTop5ByUserOrderBySavingDateDesc(User user);
 
     Optional<Saving> findByIdAndUser(UUID id, User user);
 
@@ -35,17 +37,16 @@ public interface SavingRepository extends JpaRepository<Saving, UUID> {
     );
 
     @Query("""
-        SELECT new com.Pranav.finance_tracker.analytics.dto.SavingTrendItem(
+        SELECT 
             FUNCTION('MONTH', s.savingDate),
             SUM(s.amount)
-        )
         FROM Saving s
         WHERE s.user = :user
         AND FUNCTION('YEAR', s.savingDate) = :year
         GROUP BY FUNCTION('MONTH', s.savingDate)
         ORDER BY FUNCTION('MONTH', s.savingDate)
     """)
-    List<com.Pranav.finance_tracker.analytics.dto.SavingTrendItem> getMonthlyTrend(
+    List<Object[]> getMonthlyTrend(
             @Param("user") User user,
             @Param("year") int year
     );

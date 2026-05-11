@@ -33,9 +33,15 @@ public class DirectExpenseService {
 
         User currentUser = securityUtils.getCurrentUser();
 
-        User otherUser = userRepository.findByPhone(request.getOtherUserPhone())
-                .orElseThrow(() -> new RuntimeException(
-                        "No user found with phone: " + request.getOtherUserPhone()));
+        User otherUser;
+        if (request.getFriendId() != null) {
+            otherUser = userRepository.findById(request.getFriendId())
+                    .orElseThrow(() -> new RuntimeException("No user found with id: " + request.getFriendId()));
+        } else {
+            otherUser = userRepository.findByPhone(request.getOtherUserPhone())
+                    .orElseThrow(() -> new RuntimeException(
+                            "No user found with phone: " + request.getOtherUserPhone()));
+        }
 
         if (currentUser.getId().equals(otherUser.getId())) {
             throw new RuntimeException("Cannot create expense with yourself");
@@ -80,6 +86,11 @@ public class DirectExpenseService {
                 .orElseThrow(() -> new RuntimeException(
                         "No user found with phone: " + otherUserPhone));
         return expenseRepository.findDirectExpensesBetween(currentUser.getId(), otherUser.getId());
+    }
+
+    public List<GroupExpense> getExpenseHistoryByUserId(UUID otherUserId) {
+        User currentUser = securityUtils.getCurrentUser();
+        return expenseRepository.findDirectExpensesBetween(currentUser.getId(), otherUserId);
     }
 
     // ── Split handlers ──

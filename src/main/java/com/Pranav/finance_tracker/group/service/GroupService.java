@@ -129,4 +129,25 @@ public class GroupService {
                 })
                 .toList();
     }
+
+    public GroupResponse getGroupById(UUID groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        return GroupResponse.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .createdBy(group.getCreatedBy().getName())
+                .createdAt(group.getCreatedAt())
+                .build();
+    }
+
+    public List<java.util.Map<String, Object>> getGroupMembers(UUID groupId) {
+        return groupMemberRepository.findByGroupId(groupId).stream()
+                .map(m -> java.util.Map.of(
+                        "id", (Object) m.getUser().getId(),
+                        "name", (Object) m.getUser().getName(),
+                        "email", (Object) m.getUser().getEmail()
+                ))
+                .toList();
+    }
 }

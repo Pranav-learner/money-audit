@@ -4,6 +4,7 @@ import com.Pranav.finance_tracker.group.dto.AddMemberRequest;
 import com.Pranav.finance_tracker.group.dto.CreateGroupRequest;
 import com.Pranav.finance_tracker.group.dto.GroupResponse;
 import com.Pranav.finance_tracker.group.service.GroupService;
+import com.Pranav.finance_tracker.payment.service.GroupPaymentService;
 import com.Pranav.finance_tracker.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class GroupController {
 
     private final GroupService groupService;
+    private final GroupPaymentService groupPaymentService;
 
     @PostMapping
     public GroupResponse createGroup(
@@ -51,9 +53,28 @@ public class GroupController {
         return ResponseEntity.ok("Group deleted successfully");
     }
 
-    @GetMapping("/my")
+    @GetMapping
     public List<GroupResponse> getMyGroups(Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         return groupService.getMyGroups(currentUser);
+    }
+
+    @GetMapping("/{groupId}")
+    public GroupResponse getGroup(@PathVariable UUID groupId) {
+        return groupService.getGroupById(groupId);
+    }
+
+    @GetMapping("/{groupId}/members")
+    public List<java.util.Map<String, Object>> getGroupMembers(@PathVariable UUID groupId) {
+        return groupService.getGroupMembers(groupId);
+    }
+
+    @PostMapping("/{groupId}/settle")
+    public ResponseEntity<String> settleDebt(
+            @PathVariable UUID groupId,
+            @RequestBody com.Pranav.finance_tracker.group.dto.CreatePaymentRequest request) {
+        request.setGroupId(groupId);
+        String msg = groupPaymentService.createPayment(request);
+        return ResponseEntity.ok(msg);
     }
 }

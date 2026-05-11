@@ -47,7 +47,10 @@ public class AnalyticsService {
     }
 
     public List<SavingTrendItem> getSavingsTrend(User user, int year) {
-        return savingRepository.getMonthlyTrend(user, year);
+        List<Object[]> raw = savingRepository.getMonthlyTrend(user, year);
+        return raw.stream()
+                .map(obj -> new SavingTrendItem(((Number) obj[0]).intValue(), (BigDecimal) obj[1]))
+                .collect(Collectors.toList());
     }
 
     // ── Budget Analytics ──
@@ -126,8 +129,10 @@ public class AnalyticsService {
     }
 
     public List<SavingTrendItem> getSpendingTrend(User user, int year) {
-        // SavingTrendItem can be reused for Spending trend (Month, Amount)
-        return expenseRepository.getMonthlySpendingTrend(user, year);
+        List<Object[]> raw = expenseRepository.getMonthlySpendingTrend(user, year);
+        return raw.stream()
+                .map(obj -> new SavingTrendItem(((Number) obj[0]).intValue(), (BigDecimal) obj[1]))
+                .collect(Collectors.toList());
     }
 
     public ExpenseTypeBreakdown getExpenseTypeBreakdown(User user, int month, int year) {
@@ -177,7 +182,7 @@ public class AnalyticsService {
                 .toList();
 
         List<CategoryDistributionResponse> distribution = expenseRepository.getCategoryDistribution(user, start, end);
-        List<SavingTrendItem> trend = expenseRepository.getMonthlySpendingTrend(user, year);
+        List<SavingTrendItem> trend = getSpendingTrend(user, year);
 
         BalanceOverviewResponse balance = getBalanceOverview(user);
         List<WeeklyTrendItem> weeklyTrend = getWeeklyTrend(user);

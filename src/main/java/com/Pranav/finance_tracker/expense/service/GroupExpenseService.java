@@ -279,4 +279,17 @@ public class GroupExpenseService {
         groupExpenseSplitRepository.deleteByExpense(expense);
         groupExpenseRepository.delete(expense);
     }
+
+    public List<java.util.Map<String, Object>> getGroupExpenses(UUID groupId) {
+        return groupExpenseRepository.findByGroupId(groupId).stream()
+                .map(e -> java.util.Map.of(
+                        "id", (Object) e.getId(),
+                        "title", (Object) e.getTitle(),
+                        "amount", (Object) e.getTotalAmount(),
+                        "paidBy", (Object) e.getPaidBy().getName(),
+                        "date", (Object) e.getExpenseDate().toString(),
+                        "splitType", (Object) e.getSplitType().name()
+                ))
+                .toList();
+    }
 }

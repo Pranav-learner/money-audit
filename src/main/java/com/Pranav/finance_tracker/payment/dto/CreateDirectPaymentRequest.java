@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Setter
 public class CreateDirectPaymentRequest {
     private String toUserPhone;
+    private java.util.UUID toUserId;
     private BigDecimal amount;
     private String note;
     private String requestId;

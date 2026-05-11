@@ -13,5 +13,6 @@ import java.util.UUID;
 public class CategoryResponse {
     private UUID id;
     private String name;
+    private String icon;
     private boolean isSystem;
 }

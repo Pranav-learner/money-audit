@@ -71,11 +71,12 @@ public class FriendshipService {
     // ── Send friend request by phone number ──
 
     @Transactional
-    public String sendRequest(String receiverPhone) {
+    public String sendRequest(String identifier) {
         User sender = securityUtils.getCurrentUser();
 
-        User receiver = userRepository.findByPhone(receiverPhone)
-                .orElseThrow(() -> new RuntimeException("No user found with phone: " + receiverPhone));
+        User receiver = userRepository.findByPhone(identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .orElseThrow(() -> new RuntimeException("No user found with phone/email: " + identifier));
 
         if (sender.getId().equals(receiver.getId())) {
             throw new RuntimeException("Cannot send friend request to yourself");
@@ -126,6 +127,17 @@ public class FriendshipService {
         friendshipRepository.save(friendship);
 
         return "Friend request from " + friendship.getSender().getName() + " accepted";
+    }
+
+    @Transactional
+    public String updateRequestStatus(UUID friendshipId, String status) {
+        if ("ACCEPTED".equalsIgnoreCase(status)) {
+            return acceptRequest(friendshipId);
+        } else if ("REJECTED".equalsIgnoreCase(status)) {
+            return rejectRequest(friendshipId);
+        } else {
+            throw new RuntimeException("Invalid status: " + status);
+        }
     }
 
     // ── Reject friend request ──

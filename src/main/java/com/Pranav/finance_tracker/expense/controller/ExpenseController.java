@@ -41,11 +41,13 @@ public class ExpenseController {
 
     @GetMapping
     public ResponseEntity<List<ExpenseResponse>> getAllExpenses(
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) UUID categoryId,
             Authentication authentication
     ) {
         User user = (User) authentication.getPrincipal();
         return ResponseEntity.ok(
-                expenseService.getAllExpenses(user)
+                expenseService.getFilteredExpenses(user, month, categoryId)
         );
     }
 
@@ -61,6 +63,17 @@ public class ExpenseController {
                 expenseService.updateExpense(id, request, user)
         );
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteExpense(
+            @PathVariable("id") UUID id,
+            Authentication authentication
+    ){
+        User user = (User) authentication.getPrincipal();
+        expenseService.deleteExpense(id, user);
+        return ResponseEntity.noContent().build();
+    }
+
 
     @GetMapping("/monthly")
     public ResponseEntity<List<ExpenseResponse>> getMonthlyExpenses(

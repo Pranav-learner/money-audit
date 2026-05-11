@@ -23,10 +23,17 @@ public class FriendController {
         return ResponseEntity.ok(friendshipService.searchUsers(query));
     }
 
-    @PostMapping("/api/friends/request")
+    @PostMapping("/api/friends/requests")
     public ResponseEntity<String> sendRequest(
             @RequestBody FriendRequestDTO request) {
-        return ResponseEntity.ok(friendshipService.sendRequest(request.getReceiverPhone()));
+        return ResponseEntity.ok(friendshipService.sendRequest(request.getPhoneUrlEmail()));
+    }
+
+    @PatchMapping("/api/friends/requests/{id}")
+    public ResponseEntity<String> updateRequestStatus(
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.ok(friendshipService.updateRequestStatus(id, body.get("status")));
     }
 
     @PutMapping("/api/friends/{id}/accept")

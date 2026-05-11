@@ -13,7 +13,6 @@ import java.util.UUID;
 
 public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseSplit, UUID> {
 
-    List<GroupExpenseSplit> findByGroupExpense(GroupExpense expense);
 
     List<GroupExpenseSplit> findByUser(User user);
 

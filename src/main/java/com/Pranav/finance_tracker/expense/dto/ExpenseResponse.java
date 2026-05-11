@@ -17,5 +17,6 @@ public class ExpenseResponse {
     private LocalDate expenseDate;
     private String description;
     private String categoryName;
+    private String icon;
 }
 

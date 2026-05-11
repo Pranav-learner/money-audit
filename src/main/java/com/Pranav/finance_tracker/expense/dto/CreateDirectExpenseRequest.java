@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Setter
 public class CreateDirectExpenseRequest {
     private String otherUserPhone;
+    private java.util.UUID friendId;
     private String title;
     private BigDecimal totalAmount;
     private LocalDate expenseDate;

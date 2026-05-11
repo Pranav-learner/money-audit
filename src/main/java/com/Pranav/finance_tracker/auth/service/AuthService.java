@@ -11,6 +11,7 @@ import com.Pranav.finance_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.Pranav.finance_tracker.auth.dto.UserProfileResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,17 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
-        return new RegisterResponse(user.getName(),"User registered successfully");
+        
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getEmail()
+        );
+
+        UserProfileResponse profile = new UserProfileResponse(
+                user.getId(), user.getName(), user.getEmail(), user.getPhone()
+        );
+
+        return new RegisterResponse(token, profile);
     }
 
     // login
@@ -53,6 +64,10 @@ public class AuthService {
                 user.getEmail()
         );
 
-        return new LoginResponse(token, user.getName());
+        UserProfileResponse profile = new UserProfileResponse(
+                user.getId(), user.getName(), user.getEmail(), user.getPhone()
+        );
+
+        return new LoginResponse(token, profile);
     }
 }

@@ -38,9 +38,15 @@ public class DirectPaymentService {
 
         User fromUser = securityUtils.getCurrentUser();
 
-        User toUser = userRepository.findByPhone(request.getToUserPhone())
-                .orElseThrow(() -> new RuntimeException(
-                        "No user found with phone: " + request.getToUserPhone()));
+        User toUser;
+        if (request.getToUserId() != null) {
+            toUser = userRepository.findById(request.getToUserId())
+                    .orElseThrow(() -> new RuntimeException("No user found with id: " + request.getToUserId()));
+        } else {
+            toUser = userRepository.findByPhone(request.getToUserPhone())
+                    .orElseThrow(() -> new RuntimeException(
+                            "No user found with phone: " + request.getToUserPhone()));
+        }
 
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Amount must be positive");
@@ -91,12 +97,22 @@ public class DirectPaymentService {
         return paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUser.getId());
     }
 
+    public List<Payment> getPaymentHistoryByUserId(UUID otherUserId) {
+        User currentUser = securityUtils.getCurrentUser();
+        return paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUserId);
+    }
+
     public BigDecimal getBalance(String otherUserPhone) {
         User currentUser = securityUtils.getCurrentUser();
         User otherUser = userRepository.findByPhone(otherUserPhone)
                 .orElseThrow(() -> new RuntimeException(
                         "No user found with phone: " + otherUserPhone));
         return directBalanceService.getDebtBetweenUsers(currentUser.getId(), otherUser.getId());
+    }
+
+    public BigDecimal getBalanceByUserId(UUID otherUserId) {
+        User currentUser = securityUtils.getCurrentUser();
+        return directBalanceService.getDebtBetweenUsers(currentUser.getId(), otherUserId);
     }
 
 }

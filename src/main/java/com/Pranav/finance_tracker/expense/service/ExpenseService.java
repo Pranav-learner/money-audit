@@ -66,6 +66,32 @@ public class ExpenseService {
                 .toList();
     }
 
+    public List<ExpenseResponse> getFilteredExpenses(User user, String monthStr, UUID categoryId) {
+        List<Expense> expenses;
+
+        if (monthStr != null && !monthStr.isEmpty()) {
+            String[] parts = monthStr.split("-");
+            int year = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+            LocalDate start = LocalDate.of(year, month, 1);
+            LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+            
+            if (categoryId != null) {
+                expenses = expenseRepository.findByUserAndCategoryIdAndExpenseDateBetween(user, categoryId, start, end);
+            } else {
+                expenses = expenseRepository.findByUserAndExpenseDateBetween(user, start, end);
+            }
+        } else if (categoryId != null) {
+            expenses = expenseRepository.findByUserAndCategoryId(user, categoryId);
+        } else {
+            expenses = expenseRepository.findByUser(user);
+        }
+
+        return expenses.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
 
     public ExpenseResponse updateExpense(
             UUID expenseId,
@@ -98,6 +124,13 @@ public class ExpenseService {
         expenseRepository.save(expense);
 
         return mapToResponse(expense);
+    }
+
+    public void deleteExpense(UUID expenseId, User user) {
+        Expense expense = expenseRepository
+                .findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+        expenseRepository.delete(expense);
     }
 
     public List<ExpenseResponse> getMonthlyExpenses(
@@ -265,6 +298,7 @@ public class ExpenseService {
                 .amount(expense.getAmount())
                 .expenseDate(expense.getExpenseDate())
                 .categoryName(expense.getCategory().getName())
+                .icon(expense.getCategory().getIcon())
                 .description(expense.getDescription())
                 .build();
     }

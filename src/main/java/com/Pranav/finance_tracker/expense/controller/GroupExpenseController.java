@@ -63,4 +63,10 @@ public class GroupExpenseController {
         groupExpenseService.deleteExpense(expenseId);
         return ResponseEntity.ok("Expense deleted successfully");
     }
+
+    @GetMapping("/api/groups/{groupId}/expenses")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getGroupExpenses(
+            @PathVariable UUID groupId) {
+        return ResponseEntity.ok(groupExpenseService.getGroupExpenses(groupId));
+    }
 }

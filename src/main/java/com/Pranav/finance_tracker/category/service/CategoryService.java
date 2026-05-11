@@ -54,6 +54,7 @@ public class CategoryService {
 
         Category category = Category.builder()
                 .name(request.getName())
+                .icon(request.getIcon())
                 .isSystem(false)
                 .user(user)
                 .build();
@@ -89,6 +90,7 @@ public class CategoryService {
         return CategoryResponse.builder()
                 .id(category.getId())
                 .name(category.getName())
+                .icon(category.getIcon())
                 .isSystem(category.isSystem())
                 .build();
     }

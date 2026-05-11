@@ -47,4 +47,18 @@ public class BudgetService {
             budgetRepository.save(budget);
         }
     }
+
+    public java.util.List<com.Pranav.finance_tracker.budget.dto.BudgetResponse> getBudgets(User user, Integer month, Integer year) {
+        int targetMonth = month != null ? month : java.time.LocalDate.now().getMonthValue();
+        int targetYear = year != null ? year : java.time.LocalDate.now().getYear();
+
+        java.util.List<Budget> budgets = budgetRepository.findByUserAndMonthAndYear(user, targetMonth, targetYear);
+        
+        return budgets.stream().map(b -> new com.Pranav.finance_tracker.budget.dto.BudgetResponse(
+                b.getCategory().getId(),
+                b.getLimitAmount(),
+                b.getMonth(),
+                b.getYear()
+        )).toList();
+    }
 }

@@ -17,6 +17,8 @@ import java.util.UUID;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByUser(User user);
+    
+    List<Expense> findTop5ByUserOrderByExpenseDateDesc(User user);
 
     List<Expense> findByUserAndExpenseDateBetween(
             User user,
@@ -28,6 +30,14 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByUserAndCategoryId(User user, UUID categoryId);
 
+    List<Expense> findByUserAndCategoryIdAndExpenseDateBetween(
+            User user,
+            UUID categoryId,
+            LocalDate start,
+            LocalDate end
+    );
+
+    @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.user = :user AND e.expenseDate BETWEEN :start AND :end")
     BigDecimal sumByUserAndExpenseDateBetween(
             @Param("user") User user,
             @Param("start") LocalDate start,
@@ -91,17 +101,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     );
 
     @Query("""
-        SELECT new com.Pranav.finance_tracker.analytics.dto.SavingTrendItem(
-            FUNCTION('MONTH', e.expenseDate),
-            SUM(e.amount)
-        )
-        FROM Expense e
-        WHERE e.user = :user
-        AND FUNCTION('YEAR', e.expenseDate) = :year
-        GROUP BY FUNCTION('MONTH', e.expenseDate)
-        ORDER BY FUNCTION('MONTH', e.expenseDate)
+        SELECT 
+            FUNCTION('MONTH', s.expenseDate),
+            SUM(s.amount)
+        FROM Expense s
+        WHERE s.user = :user
+        AND FUNCTION('YEAR', s.expenseDate) = :year
+        GROUP BY FUNCTION('MONTH', s.expenseDate)
+        ORDER BY FUNCTION('MONTH', s.expenseDate)
     """)
-    List<com.Pranav.finance_tracker.analytics.dto.SavingTrendItem> getMonthlySpendingTrend(
+    List<Object[]> getMonthlySpendingTrend(
             @Param("user") User user,
             @Param("year") int year
     );
