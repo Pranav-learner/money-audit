@@ -27,24 +27,24 @@ public interface SavingRepository extends JpaRepository<Saving, UUID> {
     @Query("""
         SELECT SUM(s.amount) FROM Saving s 
         WHERE s.user = :user 
-        AND FUNCTION('MONTH', s.savingDate) = :month 
-        AND FUNCTION('YEAR', s.savingDate) = :year
+        AND MONTH(s.savingDate) = :month 
+        AND YEAR(s.savingDate) = :year
     """)
     BigDecimal sumByUserAndMonthAndYear(
             @Param("user") User user,
             @Param("month") int month,
             @Param("year") int year
     );
-
+ 
     @Query("""
         SELECT 
-            FUNCTION('MONTH', s.savingDate),
+            MONTH(s.savingDate),
             SUM(s.amount)
         FROM Saving s
         WHERE s.user = :user
-        AND FUNCTION('YEAR', s.savingDate) = :year
-        GROUP BY FUNCTION('MONTH', s.savingDate)
-        ORDER BY FUNCTION('MONTH', s.savingDate)
+        AND YEAR(s.savingDate) = :year
+        GROUP BY MONTH(s.savingDate)
+        ORDER BY MONTH(s.savingDate)
     """)
     List<Object[]> getMonthlyTrend(
             @Param("user") User user,

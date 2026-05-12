@@ -102,13 +102,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
 
     @Query("""
         SELECT 
-            FUNCTION('MONTH', s.expenseDate),
+            MONTH(s.expenseDate),
             SUM(s.amount)
         FROM Expense s
         WHERE s.user = :user
-        AND FUNCTION('YEAR', s.expenseDate) = :year
-        GROUP BY FUNCTION('MONTH', s.expenseDate)
-        ORDER BY FUNCTION('MONTH', s.expenseDate)
+        AND YEAR(s.expenseDate) = :year
+        GROUP BY MONTH(s.expenseDate)
+        ORDER BY MONTH(s.expenseDate)
     """)
     List<Object[]> getMonthlySpendingTrend(
             @Param("user") User user,

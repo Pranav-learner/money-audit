@@ -128,8 +128,13 @@ public class DashboardController {
             ));
         }
 
-        // Sort both by date descending, take top 5 overall
-        activities.sort(Comparator.comparing(RecentActivityResponse::date).reversed());
+        // Filter out any activities with null dates and then sort by date descending
+        activities.sort((a1, a2) -> {
+            if (a1.date() == null) return 1;
+            if (a2.date() == null) return -1;
+            return a2.date().compareTo(a1.date());
+        });
+
         if (activities.size() > 5) {
             activities = activities.subList(0, 5);
         }

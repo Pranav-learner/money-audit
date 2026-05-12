@@ -136,15 +136,15 @@ public class AnalyticsService {
     }
 
     public ExpenseTypeBreakdown getExpenseTypeBreakdown(User user, int month, int year) {
-        BigDecimal direct = groupExpenseRepository.sumTotalDirectExpenseAsPayer(user.getId())
-                .add(groupExpenseRepository.sumTotalDirectExpenseAsParticipant(user.getId()));
-        
-        BigDecimal group = groupExpenseRepository.sumTotalGroupExpenseAsPayer(user.getId())
-                .add(groupExpenseRepository.sumTotalGroupExpenseAsParticipant(user.getId()));
+        BigDecimal pD = groupExpenseRepository.sumTotalDirectExpenseAsPayer(user.getId());
+        BigDecimal partD = groupExpenseRepository.sumTotalDirectExpenseAsParticipant(user.getId());
+        BigDecimal pG = groupExpenseRepository.sumTotalGroupExpenseAsPayer(user.getId());
+        BigDecimal partG = groupExpenseRepository.sumTotalGroupExpenseAsParticipant(user.getId());
 
-        return new ExpenseTypeBreakdown(
-                direct != null ? direct : BigDecimal.ZERO, 
-                group != null ? group : BigDecimal.ZERO);
+        BigDecimal direct = (pD != null ? pD : BigDecimal.ZERO).add(partD != null ? partD : BigDecimal.ZERO);
+        BigDecimal group = (pG != null ? pG : BigDecimal.ZERO).add(partG != null ? partG : BigDecimal.ZERO);
+
+        return new ExpenseTypeBreakdown(direct, group);
     }
 
     // ── Balance Analytics ──
@@ -156,8 +156,13 @@ public class AnalyticsService {
         BigDecimal paymentsSent = paymentRepository.sumTotalPaymentsSent(user.getId());
         BigDecimal paymentsReceived = paymentRepository.sumTotalPaymentsReceived(user.getId());
 
-        BigDecimal netOwe = owedByUser.subtract(paymentsSent);
-        BigDecimal netOwed = owedToUser.subtract(paymentsReceived);
+        BigDecimal owedVal = owedByUser != null ? owedByUser : BigDecimal.ZERO;
+        BigDecimal toOweVal = owedToUser != null ? owedToUser : BigDecimal.ZERO;
+        BigDecimal sentVal = paymentsSent != null ? paymentsSent : BigDecimal.ZERO;
+        BigDecimal receivedVal = paymentsReceived != null ? paymentsReceived : BigDecimal.ZERO;
+
+        BigDecimal netOwe = owedVal.subtract(sentVal);
+        BigDecimal netOwed = toOweVal.subtract(receivedVal);
 
         return BalanceOverviewResponse.builder()
                 .youOwe(netOwe)

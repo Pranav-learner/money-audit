@@ -25,6 +25,7 @@ public class GroupExpenseController {
 
     private final GroupExpenseService groupExpenseService;
     private final GroupBalanceService groupBalanceService;
+    private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping("/api/groups/{groupId}/expenses")
     @Operation(summary = "Add a new expense to a group")
@@ -48,9 +49,8 @@ public class GroupExpenseController {
     @GetMapping("/api/groups/{groupId}/balance-summary")
     @Operation(summary = "Get personal balance summary in a group")
     public ResponseEntity<BalanceSummaryResponse> getBalanceSummary(
-            @PathVariable UUID groupId,
-            Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
+            @PathVariable UUID groupId) {
+        User currentUser = securityUtils.getCurrentUser();
         BalanceSummaryResponse summary =
                 groupBalanceService.getBalanceSummary(groupId, currentUser);
         return ResponseEntity.ok(summary);

@@ -25,13 +25,13 @@ public class GroupController {
 
     private final GroupService groupService;
     private final GroupPaymentService groupPaymentService;
+    private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping
     @Operation(summary = "Create a new expense group")
     public ResponseEntity<GroupResponse> createGroup(
-            @Valid @RequestBody CreateGroupRequest request,
-            Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
+            @Valid @RequestBody CreateGroupRequest request) {
+        User currentUser = securityUtils.getCurrentUser();
         return ResponseEntity.ok(groupService.createGroup(request, currentUser));
     }
 
@@ -61,8 +61,8 @@ public class GroupController {
 
     @GetMapping
     @Operation(summary = "List all groups for the current user")
-    public ResponseEntity<List<GroupResponse>> getMyGroups(Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
+    public ResponseEntity<List<GroupResponse>> getMyGroups() {
+        User currentUser = securityUtils.getCurrentUser();
         return ResponseEntity.ok(groupService.getMyGroups(currentUser));
     }
 

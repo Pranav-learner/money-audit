@@ -29,22 +29,18 @@ public class DirectBalanceService {
      *          - (payments fromUser→toUser) + (payments toUser→fromUser)
      */
     public BigDecimal getDebtBetweenUsers(UUID fromUserId, UUID toUserId) {
-
-        // What fromUser owes toUser (toUser paid, fromUser's split)
-        BigDecimal fromOwesToTo = splitRepository.sumDirectDebt(fromUserId, toUserId);
-
-        // What toUser owes fromUser (fromUser paid, toUser's split)
-        BigDecimal toOwesFromFrom = splitRepository.sumDirectDebt(toUserId, fromUserId);
-
-        // Payments made: fromUser → toUser
+        BigDecimal fromOwes = splitRepository.sumDirectDebt(fromUserId, toUserId);
+        BigDecimal toOwes = splitRepository.sumDirectDebt(toUserId, fromUserId);
         BigDecimal paidFromTo = paymentRepository.sumDirectPaymentsFromTo(fromUserId, toUserId);
-
-        // Payments made: toUser → fromUser
         BigDecimal paidToFrom = paymentRepository.sumDirectPaymentsFromTo(toUserId, fromUserId);
 
-        // Net debt = what I owe them - what they owe me - what I've paid + what they've paid back
-        return fromOwesToTo.subtract(toOwesFromFrom)
-                .subtract(paidFromTo)
-                .add(paidToFrom);
+        BigDecimal fromOwesVal = fromOwes != null ? fromOwes : BigDecimal.ZERO;
+        BigDecimal toOwesVal = toOwes != null ? toOwes : BigDecimal.ZERO;
+        BigDecimal paidFromToVal = paidFromTo != null ? paidFromTo : BigDecimal.ZERO;
+        BigDecimal paidToFromVal = paidToFrom != null ? paidToFrom : BigDecimal.ZERO;
+
+        return fromOwesVal.subtract(toOwesVal)
+                .subtract(paidFromToVal)
+                .add(paidToFromVal);
     }
 }

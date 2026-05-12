@@ -17,13 +17,13 @@ import java.util.List;
 public class BudgetController {
 
     private final BudgetService budgetService;
+    private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping
     public ResponseEntity<Void> createBudget(
-            @RequestBody CreateBudgetRequest request,
-            Authentication authentication
+            @RequestBody CreateBudgetRequest request
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         budgetService.createOrUpdateBudget(request, user);
         return ResponseEntity.ok().build();
     }
@@ -31,10 +31,9 @@ public class BudgetController {
     @GetMapping
     public ResponseEntity<List<BudgetResponse>> getBudgets(
             @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year,
-            Authentication authentication
+            @RequestParam(required = false) Integer year
     ) {
-        User user = (User) authentication.getPrincipal();
+        User user = securityUtils.getCurrentUser();
         return ResponseEntity.ok(budgetService.getBudgets(user, month, year));
     }
 }
