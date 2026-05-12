@@ -6,7 +6,7 @@ import com.Pranav.finance_tracker.group.dto.CreatePaymentRequest;
 import com.Pranav.finance_tracker.group.entity.Group;
 import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
-import com.Pranav.finance_tracker.expense.service.GroupBalanceService;
+import com.Pranav.finance_tracker.group.service.GroupBalanceService;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;

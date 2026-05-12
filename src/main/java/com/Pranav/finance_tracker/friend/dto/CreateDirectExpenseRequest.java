@@ -1,4 +1,4 @@
-package com.Pranav.finance_tracker.expense.dto;
+package com.Pranav.finance_tracker.friend.dto;
 
 import com.Pranav.finance_tracker.group.enums.SplitType;
 import jakarta.validation.constraints.NotBlank;

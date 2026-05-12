@@ -9,7 +9,7 @@ import com.Pranav.finance_tracker.expense.entity.Expense;
 import com.Pranav.finance_tracker.expense.repository.ExpenseRepository;
 import com.Pranav.finance_tracker.group.entity.Group;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
-import com.Pranav.finance_tracker.expense.service.GroupExpenseService;
+import com.Pranav.finance_tracker.group.service.GroupExpenseService;
 import com.Pranav.finance_tracker.group.dto.CreateGroupExpenseRequest;
 import com.Pranav.finance_tracker.group.entity.GroupExpense;
 import com.Pranav.finance_tracker.receipt.dto.ConfirmGroupReceiptRequest;

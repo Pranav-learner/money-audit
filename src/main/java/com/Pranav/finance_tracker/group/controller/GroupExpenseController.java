@@ -1,11 +1,11 @@
-package com.Pranav.finance_tracker.expense.controller;
+package com.Pranav.finance_tracker.group.controller;
 
 import com.Pranav.finance_tracker.group.dto.BalanceSummaryResponse;
 import com.Pranav.finance_tracker.group.dto.CreateGroupExpenseRequest;
 import com.Pranav.finance_tracker.group.dto.GroupBalanceResponse;
 import com.Pranav.finance_tracker.group.dto.UpdateGroupExpenseRequest;
-import com.Pranav.finance_tracker.expense.service.GroupExpenseService;
-import com.Pranav.finance_tracker.expense.service.GroupBalanceService;
+import com.Pranav.finance_tracker.group.service.GroupExpenseService;
+import com.Pranav.finance_tracker.group.service.GroupBalanceService;
 import com.Pranav.finance_tracker.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

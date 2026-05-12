@@ -8,7 +8,7 @@ import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
-import com.Pranav.finance_tracker.expense.service.GroupBalanceService;
+import com.Pranav.finance_tracker.group.service.GroupBalanceService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,4 @@
-package com.Pranav.finance_tracker.expense.dto;
+package com.Pranav.finance_tracker.friend.dto;
 
 import lombok.Builder;
 import lombok.Getter;

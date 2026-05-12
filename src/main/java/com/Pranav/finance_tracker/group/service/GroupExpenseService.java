@@ -1,4 +1,4 @@
-package com.Pranav.finance_tracker.expense.service;
+package com.Pranav.finance_tracker.group.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
 import com.Pranav.finance_tracker.email.service.EmailService;

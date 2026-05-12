@@ -1,4 +1,4 @@
-package com.Pranav.finance_tracker.expense.service;
+package com.Pranav.finance_tracker.friend.service;
 
 import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;

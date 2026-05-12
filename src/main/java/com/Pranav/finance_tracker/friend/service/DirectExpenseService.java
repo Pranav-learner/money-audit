@@ -1,8 +1,8 @@
-package com.Pranav.finance_tracker.expense.service;
+package com.Pranav.finance_tracker.friend.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
 import com.Pranav.finance_tracker.email.service.EmailService;
-import com.Pranav.finance_tracker.expense.dto.CreateDirectExpenseRequest;
+import com.Pranav.finance_tracker.friend.dto.CreateDirectExpenseRequest;
 import com.Pranav.finance_tracker.group.entity.GroupExpense;
 import com.Pranav.finance_tracker.group.entity.GroupExpenseSplit;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;

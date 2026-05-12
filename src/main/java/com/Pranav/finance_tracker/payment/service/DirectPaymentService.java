@@ -2,7 +2,7 @@ package com.Pranav.finance_tracker.payment.service;
 
 import com.Pranav.finance_tracker.auth.security.SecurityUtils;
 import com.Pranav.finance_tracker.email.service.EmailService;
-import com.Pranav.finance_tracker.expense.service.DirectBalanceService;
+import com.Pranav.finance_tracker.friend.service.DirectBalanceService;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.enums.PaymentMethod;

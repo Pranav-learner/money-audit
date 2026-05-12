@@ -1,9 +1,9 @@
-package com.Pranav.finance_tracker.expense.controller;
+package com.Pranav.finance_tracker.friend.controller;
 
-import com.Pranav.finance_tracker.expense.dto.CreateDirectExpenseRequest;
-import com.Pranav.finance_tracker.expense.dto.DirectTransactionResponse;
+import com.Pranav.finance_tracker.friend.dto.CreateDirectExpenseRequest;
+import com.Pranav.finance_tracker.friend.dto.DirectTransactionResponse;
 import com.Pranav.finance_tracker.group.entity.GroupExpense;
-import com.Pranav.finance_tracker.expense.service.DirectExpenseService;
+import com.Pranav.finance_tracker.friend.service.DirectExpenseService;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.service.DirectPaymentService;
