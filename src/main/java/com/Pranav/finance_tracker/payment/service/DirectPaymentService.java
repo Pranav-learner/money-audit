@@ -5,6 +5,8 @@ import com.Pranav.finance_tracker.email.service.EmailService;
 import com.Pranav.finance_tracker.expense.service.DirectBalanceService;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
+import com.Pranav.finance_tracker.payment.enums.PaymentMethod;
+import com.Pranav.finance_tracker.payment.enums.PaymentStatus;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
@@ -74,6 +76,8 @@ public class DirectPaymentService {
                 .group(null)
                 .note(request.getNote())
                 .requestId(request.getRequestId())
+                .method(PaymentMethod.MANUAL)
+                .status(PaymentStatus.SUCCESS)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -87,6 +91,32 @@ public class DirectPaymentService {
         emailService.sendEmail(toUser, subject, body);
 
         return "Payment recorded successfully";
+    }
+
+    @Transactional
+    public void recordRazorpayPayment(User fromUser, User toUser, BigDecimal amount, String orderId, String paymentId, String note) {
+        Payment payment = Payment.builder()
+                .fromUser(fromUser)
+                .toUser(toUser)
+                .amount(amount)
+                .group(null)
+                .note(note)
+                .method(PaymentMethod.RAZORPAY)
+                .status(PaymentStatus.SUCCESS)
+                .gatewayOrderId(orderId)
+                .gatewayPaymentId(paymentId)
+                .paidAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        paymentRepository.save(payment);
+
+        // Send Notification
+        String subject = "Razorpay Payment Received: " + amount;
+        String body = String.format("Hello %s,\n\n%s has paid you %.2f via Razorpay.\nNote: %s",
+                toUser.getName(), fromUser.getName(), amount,
+                (note != null ? note : "No note"));
+        emailService.sendEmail(toUser, subject, body);
     }
 
     public List<Payment> getPaymentHistory(String otherUserPhone) {

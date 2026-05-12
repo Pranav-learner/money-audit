@@ -7,6 +7,9 @@ import com.Pranav.finance_tracker.expense.service.DirectExpenseService;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.service.DirectPaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +22,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/direct")
 @RequiredArgsConstructor
+@Tag(name = "Direct Split", description = "1-to-1 expenses and settlements")
 public class DirectSplitController {
 
     private final DirectExpenseService directExpenseService;
     private final DirectPaymentService directPaymentService;
 
     @GetMapping("/{friendId}")
+    @Operation(summary = "Get transaction history between current user and a friend")
     public ResponseEntity<List<DirectTransactionResponse>> getDirectHistory(@PathVariable UUID friendId) {
         List<GroupExpense> expenses = directExpenseService.getExpenseHistoryByUserId(friendId);
         List<Payment> payments = directPaymentService.getPaymentHistoryByUserId(friendId);
@@ -59,12 +64,14 @@ public class DirectSplitController {
     }
 
     @PostMapping
-    public ResponseEntity<String> addDirectExpense(@RequestBody CreateDirectExpenseRequest request) {
+    @Operation(summary = "Add a new 1-to-1 expense")
+    public ResponseEntity<String> addDirectExpense(@Valid @RequestBody CreateDirectExpenseRequest request) {
         return ResponseEntity.ok(directExpenseService.createExpense(request));
     }
 
     @PostMapping("/settle")
-    public ResponseEntity<String> settleDirect(@RequestBody CreateDirectPaymentRequest request) {
+    @Operation(summary = "Settle 1-to-1 debt (manual/mock payment)")
+    public ResponseEntity<String> settleDirect(@Valid @RequestBody CreateDirectPaymentRequest request) {
         return ResponseEntity.ok(directPaymentService.createPayment(request));
     }
 

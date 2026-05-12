@@ -1,6 +1,8 @@
 package com.Pranav.finance_tracker.payment.entity;
 
 import com.Pranav.finance_tracker.group.entity.Group;
+import com.Pranav.finance_tracker.payment.enums.PaymentMethod;
+import com.Pranav.finance_tracker.payment.enums.PaymentStatus;
 import com.Pranav.finance_tracker.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,4 +45,28 @@ public class Payment {
 
     @Column(unique = true)
     private String requestId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PaymentMethod method;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PaymentStatus status;
+
+    private String gatewayOrderId;
+    private String gatewayPaymentId;
+
+    @Column(length = 512)
+    private String gatewaySignature;
+
+    private LocalDateTime paidAt;
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (method == null) method = PaymentMethod.MANUAL;
+        if (status == null) status = PaymentStatus.SUCCESS;
+        if (status == PaymentStatus.SUCCESS && paidAt == null) paidAt = createdAt;
+    }
 }

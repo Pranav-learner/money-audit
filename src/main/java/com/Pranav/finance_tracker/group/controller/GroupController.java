@@ -6,6 +6,9 @@ import com.Pranav.finance_tracker.group.dto.GroupResponse;
 import com.Pranav.finance_tracker.group.service.GroupService;
 import com.Pranav.finance_tracker.payment.service.GroupPaymentService;
 import com.Pranav.finance_tracker.user.entity.User;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,23 +20,26 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/groups")
 @RequiredArgsConstructor
+@Tag(name = "Groups", description = "Manage expense groups and members")
 public class GroupController {
 
     private final GroupService groupService;
     private final GroupPaymentService groupPaymentService;
 
     @PostMapping
-    public GroupResponse createGroup(
-            @RequestBody CreateGroupRequest request,
+    @Operation(summary = "Create a new expense group")
+    public ResponseEntity<GroupResponse> createGroup(
+            @Valid @RequestBody CreateGroupRequest request,
             Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        return groupService.createGroup(request, currentUser);
+        return ResponseEntity.ok(groupService.createGroup(request, currentUser));
     }
 
     @PostMapping("/{groupId}/members")
+    @Operation(summary = "Add a member to a group")
     public ResponseEntity<Void> addMember(
             @PathVariable UUID groupId,
-            @RequestBody AddMemberRequest request) {
+            @Valid @RequestBody AddMemberRequest request) {
         groupService.addMember(groupId, request.getUserId());
         return ResponseEntity.ok().build();
     }
@@ -54,9 +60,10 @@ public class GroupController {
     }
 
     @GetMapping
-    public List<GroupResponse> getMyGroups(Authentication authentication) {
+    @Operation(summary = "List all groups for the current user")
+    public ResponseEntity<List<GroupResponse>> getMyGroups(Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        return groupService.getMyGroups(currentUser);
+        return ResponseEntity.ok(groupService.getMyGroups(currentUser));
     }
 
     @GetMapping("/{groupId}")
@@ -70,9 +77,10 @@ public class GroupController {
     }
 
     @PostMapping("/{groupId}/settle")
+    @Operation(summary = "Settle debt in a group")
     public ResponseEntity<String> settleDebt(
             @PathVariable UUID groupId,
-            @RequestBody com.Pranav.finance_tracker.group.dto.CreatePaymentRequest request) {
+            @Valid @RequestBody com.Pranav.finance_tracker.group.dto.CreatePaymentRequest request) {
         request.setGroupId(groupId);
         String msg = groupPaymentService.createPayment(request);
         return ResponseEntity.ok(msg);

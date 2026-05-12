@@ -41,7 +41,7 @@ public class GroupExpenseService {
     private final EmailService emailService;
 
     @Transactional
-    public void createGroupExpense(CreateGroupExpenseRequest request ){
+    public GroupExpense createGroupExpense(CreateGroupExpenseRequest request ){
 
         User currenntUser = securityUtils.getCurrentUser();
 
@@ -73,6 +73,7 @@ public class GroupExpenseService {
                 emailService.sendEmail(member.getUser(), subject, body);
             }
         }
+        return expense;
     }
 
     private void validateUserIsGroupMember(Group group, User user) {
