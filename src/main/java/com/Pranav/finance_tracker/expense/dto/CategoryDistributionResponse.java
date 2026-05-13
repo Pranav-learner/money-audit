@@ -9,7 +9,12 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CategoryDistributionResponse {
 
-    private String categoryName;
-    private BigDecimal totalAmount;
+    private String name;
+    private BigDecimal value;
+    private String color;
+    public CategoryDistributionResponse(String name, BigDecimal value) {
+        this.name = name;
+        this.value = value;
+    }
 }
 

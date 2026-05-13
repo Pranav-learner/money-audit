@@ -87,7 +87,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     @Query("""
        SELECT new com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse(
            e.category.name,
-           SUM(e.amount)
+           SUM(e.amount),
+           '#6366f1'
        )
        FROM Expense e
        WHERE e.user = :user

@@ -13,6 +13,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WeeklyTrendItem {
-    private LocalDate weekStartDate;
+    private LocalDate date;
     private BigDecimal amount;
 }

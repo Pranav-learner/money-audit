@@ -17,8 +17,15 @@ public class DashboardResponse {
     private BigDecimal totalSpentMonth;
     private BigDecimal totalSavingsMonth;
     private BigDecimal netBalance;
+    private String balanceTrend;
+    private String expenseTrend;
+    private String savingsTrend;
     private List<BudgetUsageResponse> budgetAlerts; // Only those NEAR_LIMIT or OVER_BUDGET
     private List<CategoryDistributionResponse> categoryDistribution;
-    private List<SavingTrendItem> monthlyTrend; // Reusing for spending trend
+    private List<?> monthlyTrend; // Reusing for spending trend
     private List<WeeklyTrendItem> weeklyTrend;
+
+    private BigDecimal totalBudget;
+    private BigDecimal totalBudgetSpent;
+    private int budgetRemainingPct;
 }

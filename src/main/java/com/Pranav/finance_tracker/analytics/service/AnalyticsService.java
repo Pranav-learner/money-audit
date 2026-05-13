@@ -98,10 +98,10 @@ public class AnalyticsService {
 
         BigDecimal totalSavings = savingRepository.sumByUserAndMonthAndYear(user, month, year);
         BigDecimal totalSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
-        List<CategoryDistributionResponse> distribution = expenseRepository.getCategoryDistribution(user, start, end);
+        List<CategoryDistributionResponse> distribution = getCategoryDistribution(user, month, year, "MONTH");
 
         String topCategory = (distribution != null && !distribution.isEmpty()) 
-            ? distribution.get(0).getCategoryName() 
+            ? distribution.get(0).getName() 
             : "None";
 
         return FinancialSummaryResponse.builder()
@@ -125,14 +125,33 @@ public class AnalyticsService {
             start = LocalDate.of(year, month, 1);
         }
         
-        return expenseRepository.getCategoryDistribution(user, start, end);
+        List<CategoryDistributionResponse> list = expenseRepository.getCategoryDistribution(user, start, end);
+        String[] colors = {"#6366f1", "#2dd4a8", "#fbbf24", "#f87171", "#a78bfa", "#f472b6"};
+        
+        for (int i = 0; i < list.size(); i++) {
+            list.get(i).setColor(colors[i % colors.length]);
+        }
+        return list;
     }
 
-    public List<SavingTrendItem> getSpendingTrend(User user, int year) {
+    public List<Map<String, Object>> getSpendingTrend(User user, int year) {
         List<Object[]> raw = expenseRepository.getMonthlySpendingTrend(user, year);
-        return raw.stream()
-                .map(obj -> new SavingTrendItem(((Number) obj[0]).intValue(), (BigDecimal) obj[1]))
-                .collect(Collectors.toList());
+        Map<Integer, BigDecimal> monthlySums = raw.stream()
+                .collect(Collectors.toMap(
+                    obj -> ((Number) obj[0]).intValue(),
+                    obj -> (BigDecimal) obj[1]
+                ));
+
+        String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        List<Map<String, Object>> trend = new ArrayList<>();
+        
+        for (int i = 1; i <= 12; i++) {
+            trend.add(Map.of(
+                "month", months[i - 1],
+                "amount", monthlySums.getOrDefault(i, BigDecimal.ZERO)
+            ));
+        }
+        return trend;
     }
 
     public ExpenseTypeBreakdown getExpenseTypeBreakdown(User user, int month, int year) {
@@ -156,18 +175,37 @@ public class AnalyticsService {
         BigDecimal paymentsSent = paymentRepository.sumTotalPaymentsSent(user.getId());
         BigDecimal paymentsReceived = paymentRepository.sumTotalPaymentsReceived(user.getId());
 
-        BigDecimal owedVal = owedByUser != null ? owedByUser : BigDecimal.ZERO;
-        BigDecimal toOweVal = owedToUser != null ? owedToUser : BigDecimal.ZERO;
+        BigDecimal personalExpenses = expenseRepository.sumAmountByUser(user);
+        BigDecimal totalSavings = savingRepository.sumByUser(user);
+
+        // Sum of all expenses where I was the payer (Initial cash outflow for splits)
+        BigDecimal pD = groupExpenseRepository.sumTotalDirectExpenseAsPayer(user.getId());
+        BigDecimal pG = groupExpenseRepository.sumTotalGroupExpenseAsPayer(user.getId());
+        BigDecimal totalOutlay = (pD != null ? pD : BigDecimal.ZERO).add(pG != null ? pG : BigDecimal.ZERO);
+
+        BigDecimal personalVal = personalExpenses != null ? personalExpenses : BigDecimal.ZERO;
+        BigDecimal savingsVal = totalSavings != null ? totalSavings : BigDecimal.ZERO;
         BigDecimal sentVal = paymentsSent != null ? paymentsSent : BigDecimal.ZERO;
         BigDecimal receivedVal = paymentsReceived != null ? paymentsReceived : BigDecimal.ZERO;
 
+        // Debt (Unpaid)
+        BigDecimal owedVal = owedByUser != null ? owedByUser : BigDecimal.ZERO;
+        BigDecimal toOweVal = owedToUser != null ? owedToUser : BigDecimal.ZERO;
         BigDecimal netOwe = owedVal.subtract(sentVal);
         BigDecimal netOwed = toOweVal.subtract(receivedVal);
+
+        // Net Balance = (Actual Cash In) - (Actual Cash Out)
+        // In: Savings + Received Settlements
+        // Out: Personal Expenses + Settlements I Paid + Total Outlay I Paid for others up front
+        BigDecimal netBalance = savingsVal.add(receivedVal)
+                .subtract(personalVal)
+                .subtract(sentVal)
+                .subtract(totalOutlay);
 
         return BalanceOverviewResponse.builder()
                 .youOwe(netOwe)
                 .youAreOwed(netOwed)
-                .netBalance(netOwed.subtract(netOwe))
+                .netBalance(netBalance)
                 .build();
     }
 
@@ -186,21 +224,79 @@ public class AnalyticsService {
                 .filter(b -> !"NORMAL".equals(b.getStatus()))
                 .toList();
 
-        List<CategoryDistributionResponse> distribution = expenseRepository.getCategoryDistribution(user, start, end);
-        List<SavingTrendItem> trend = getSpendingTrend(user, year);
+        List<CategoryDistributionResponse> distribution = getCategoryDistribution(user, month, year, "MONTH");
+        List<Map<String, Object>> trend = getSpendingTrend(user, year);
 
         BalanceOverviewResponse balance = getBalanceOverview(user);
         List<WeeklyTrendItem> weeklyTrend = getWeeklyTrend(user);
+
+        // Total Budget logic
+        BigDecimal totalBudget = budgetUsage.stream()
+                .map(BudgetUsageResponse::getBudget)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalBudgetSpent = budgetUsage.stream()
+                .map(BudgetUsageResponse::getSpent)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Enforce: Total budget can never exceed the saving/Income
+        BigDecimal savingsVal = totalSavings != null ? totalSavings : BigDecimal.ZERO;
+        if (totalBudget.compareTo(savingsVal) > 0) {
+            totalBudget = savingsVal;
+        }
+
+        int budgetRemainingPct = 0;
+        if (totalBudget.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal remaining = totalBudget.subtract(totalBudgetSpent);
+            if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
+            budgetRemainingPct = remaining.multiply(BigDecimal.valueOf(100))
+                    .divide(totalBudget, 0, RoundingMode.HALF_UP).intValue();
+        }
+
+        // Previous Month Data
+        LocalDate prevMonthDate = now.minusMonths(1);
+        int pMonth = prevMonthDate.getMonthValue();
+        int pYear = prevMonthDate.getYear();
+        LocalDate pStart = prevMonthDate.withDayOfMonth(1);
+        LocalDate pEnd = prevMonthDate.withDayOfMonth(prevMonthDate.lengthOfMonth());
+        
+        BigDecimal prevSavings = savingRepository.sumByUserAndMonthAndYear(user, pMonth, pYear);
+        BigDecimal prevSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, pStart, pEnd);
+
+        BigDecimal expenseRate = BigDecimal.ZERO;
+        BigDecimal spentVal = totalSpent != null ? totalSpent : BigDecimal.ZERO;
+        if (savingsVal.compareTo(BigDecimal.ZERO) > 0) {
+            expenseRate = spentVal.multiply(BigDecimal.valueOf(100))
+                    .divide(savingsVal, 1, RoundingMode.HALF_UP);
+        }
 
         return DashboardResponse.builder()
                 .totalSpentMonth(totalSpent != null ? totalSpent : BigDecimal.ZERO)
                 .totalSavingsMonth(totalSavings != null ? totalSavings : BigDecimal.ZERO)
                 .netBalance(balance.getNetBalance())
+                .expenseTrend(calculateGrowth(totalSpent, prevSpent))
+                .savingsTrend(calculateGrowth(totalSavings, prevSavings))
+                .balanceTrend(expenseRate + "%")
                 .budgetAlerts(alerts)
                 .categoryDistribution(distribution)
                 .monthlyTrend(trend)
                 .weeklyTrend(weeklyTrend)
+                .totalBudget(totalBudget)
+                .totalBudgetSpent(totalBudgetSpent)
+                .budgetRemainingPct(budgetRemainingPct)
                 .build();
+    }
+
+    private String calculateGrowth(BigDecimal current, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
+            return current != null && current.compareTo(BigDecimal.ZERO) > 0 ? "+100%" : "0%";
+        }
+        BigDecimal curr = current != null ? current : BigDecimal.ZERO;
+        BigDecimal growth = curr.subtract(previous)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(previous, 1, RoundingMode.HALF_UP);
+        
+        return (growth.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "") + growth + "%";
     }
 
     private List<WeeklyTrendItem> getWeeklyTrend(User user) {

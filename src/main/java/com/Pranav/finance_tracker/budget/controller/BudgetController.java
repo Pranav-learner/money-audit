@@ -1,5 +1,6 @@
 package com.Pranav.finance_tracker.budget.controller;
 
+import com.Pranav.finance_tracker.analytics.service.AnalyticsService;
 import com.Pranav.finance_tracker.budget.dto.CreateBudgetRequest;
 import com.Pranav.finance_tracker.budget.dto.BudgetResponse;
 import com.Pranav.finance_tracker.budget.service.BudgetService;
@@ -17,6 +18,7 @@ import java.util.List;
 public class BudgetController {
 
     private final BudgetService budgetService;
+    private final AnalyticsService analyticsService;
     private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
     @PostMapping
@@ -29,12 +31,15 @@ public class BudgetController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BudgetResponse>> getBudgets(
+    public ResponseEntity<?> getBudgets(
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year
     ) {
         User user = securityUtils.getCurrentUser();
-        return ResponseEntity.ok(budgetService.getBudgets(user, month, year));
+        int targetMonth = month != null ? month : java.time.LocalDate.now().getMonthValue();
+        int targetYear = year != null ? year : java.time.LocalDate.now().getYear();
+        
+        return ResponseEntity.ok(analyticsService.getBudgetUsage(user, targetMonth, targetYear));
     }
 }
 

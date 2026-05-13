@@ -35,8 +35,12 @@ public class DashboardController {
             BigDecimal totalBalance,
             BigDecimal monthlyExpenses,
             BigDecimal totalSavings,
-            int budgetUsedPct,
-            Object trends
+            String balanceTrend,
+            String expenseTrend,
+            String savingsTrend,
+            BigDecimal totalBudget,
+            BigDecimal totalBudgetSpent,
+            int budgetRemainingPct
     ) {}
 
     public record DashboardChartsResponse(
@@ -60,20 +64,16 @@ public class DashboardController {
         User user = securityUtils.getCurrentUser();
         DashboardResponse analytics = analyticsService.getDashboardSummary(user);
 
-        // Calculate a rough average budget usage for the dashboard top level
-        int totalBudgetPct = 0;
-        if (analytics.getBudgetAlerts() != null && !analytics.getBudgetAlerts().isEmpty()) {
-             totalBudgetPct = analytics.getBudgetAlerts().stream()
-                     .mapToInt(b -> b.getPercentageUsed())
-                     .max().orElse(0); // Return highest usage or could calculate average
-        }
-
         DashboardSummaryResponse response = new DashboardSummaryResponse(
                 analytics.getNetBalance(),
                 analytics.getTotalSpentMonth(),
                 analytics.getTotalSavingsMonth(),
-                totalBudgetPct,
-                Map.of("monthlyTrend", analytics.getMonthlyTrend())
+                analytics.getBalanceTrend(),
+                analytics.getExpenseTrend(),
+                analytics.getSavingsTrend(),
+                analytics.getTotalBudget(),
+                analytics.getTotalBudgetSpent(),
+                analytics.getBudgetRemainingPct()
         );
 
         return ResponseEntity.ok(response);
@@ -88,9 +88,9 @@ public class DashboardController {
         Object budgetUsage = analyticsService.getBudgetUsage(user, now.getMonthValue(), now.getYear());
 
         DashboardChartsResponse response = new DashboardChartsResponse(
-                analytics.getWeeklyTrend(),
-                analytics.getCategoryDistribution(),
                 analytics.getMonthlyTrend(),
+                analytics.getCategoryDistribution(),
+                analytics.getWeeklyTrend(),
                 budgetUsage
         );
 
