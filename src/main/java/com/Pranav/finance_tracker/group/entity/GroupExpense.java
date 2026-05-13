@@ -48,5 +48,10 @@ public class GroupExpense {
     private User otherUser;  // only for direct expenses — the non-payer participant
 
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private boolean isSettled = false;
+
+    private LocalDateTime settledAt;
 }
 

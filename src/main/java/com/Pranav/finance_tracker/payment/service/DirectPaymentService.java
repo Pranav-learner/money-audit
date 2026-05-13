@@ -90,9 +90,9 @@ public class DirectPaymentService {
         // Check if fully settled after this payment
         BigDecimal newDebt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
         if (newDebt.abs().compareTo(new BigDecimal("0.001")) < 0) {
-            splitRepository.deleteDirectSplitsBetween(fromUser.getId(), toUser.getId());
-            expenseRepository.deleteDirectExpensesBetween(fromUser.getId(), toUser.getId());
-            paymentRepository.deleteDirectPaymentsBetween(fromUser.getId(), toUser.getId());
+            splitRepository.markDirectSplitsSettled(fromUser.getId(), toUser.getId());
+            expenseRepository.markDirectExpensesSettled(fromUser.getId(), toUser.getId());
+            paymentRepository.markDirectPaymentsSettled(fromUser.getId(), toUser.getId());
         }
 
         // Send Notification
@@ -126,9 +126,9 @@ public class DirectPaymentService {
 
         BigDecimal newDebt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
         if (newDebt.abs().compareTo(new BigDecimal("0.001")) < 0) {
-            splitRepository.deleteDirectSplitsBetween(fromUser.getId(), toUser.getId());
-            expenseRepository.deleteDirectExpensesBetween(fromUser.getId(), toUser.getId());
-            paymentRepository.deleteDirectPaymentsBetween(fromUser.getId(), toUser.getId());
+            splitRepository.markDirectSplitsSettled(fromUser.getId(), toUser.getId());
+            expenseRepository.markDirectExpensesSettled(fromUser.getId(), toUser.getId());
+            paymentRepository.markDirectPaymentsSettled(fromUser.getId(), toUser.getId());
         }
 
         // Send Notification
@@ -144,12 +144,30 @@ public class DirectPaymentService {
         User otherUser = userRepository.findByPhone(otherUserPhone)
                 .orElseThrow(() -> new RuntimeException(
                         "No user found with phone: " + otherUserPhone));
-        return paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUser.getId());
+        List<Payment> activePayments = paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUser.getId());
+        
+        // Add the most recent settlement payment for context
+        Payment lastSettlement = paymentRepository.findLastSettlementBetween(currentUser.getId(), otherUser.getId());
+        if (lastSettlement != null) {
+            List<Payment> allPayments = new java.util.ArrayList<>(activePayments);
+            allPayments.add(lastSettlement);
+            return allPayments;
+        }
+        return activePayments;
     }
 
     public List<Payment> getPaymentHistoryByUserId(UUID otherUserId) {
         User currentUser = securityUtils.getCurrentUser();
-        return paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUserId);
+        List<Payment> activePayments = paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUserId);
+        
+        // Add the most recent settlement payment for context
+        Payment lastSettlement = paymentRepository.findLastSettlementBetween(currentUser.getId(), otherUserId);
+        if (lastSettlement != null) {
+            List<Payment> allPayments = new java.util.ArrayList<>(activePayments);
+            allPayments.add(lastSettlement);
+            return allPayments;
+        }
+        return activePayments;
     }
 
     public List<Payment> getAllPaymentsByUser() {

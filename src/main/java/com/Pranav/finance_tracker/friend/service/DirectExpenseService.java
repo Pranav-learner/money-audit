@@ -108,6 +108,15 @@ public class DirectExpenseService {
         return expenseRepository.findAllDirectExpensesByUser(currentUser.getId());
     }
 
+    public java.util.Map<String, Long> getBorrowRate(UUID friendId) {
+        User currentUser = securityUtils.getCurrentUser();
+        
+        long lentCount = expenseRepository.countDirectExpensesAsPayer(currentUser.getId(), friendId);
+        long borrowCount = expenseRepository.countDirectExpensesAsPayer(friendId, currentUser.getId());
+        
+        return java.util.Map.of("borrowCount", borrowCount, "lendCount", lentCount);
+    }
+
     // ── Split handlers ──
 
     private void handleEqualSplit(GroupExpense expense, User payer, User other) {

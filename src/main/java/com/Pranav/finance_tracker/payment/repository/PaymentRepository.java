@@ -26,41 +26,37 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
         boolean existsByGroupId(UUID groupId);
 
-        // ── Direct payment queries (group IS NULL) ──
+        // ── Active direct payment queries (isSettled = false) ──
 
-        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL AND p.isSettled = false " +
                         "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
                         "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
         List<Payment> findDirectPaymentsBetween(
                         @Param("user1") UUID user1, @Param("user2") UUID user2);
 
-        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL AND p.isSettled = false " +
                         "AND (p.fromUser.id = :userId OR p.toUser.id = :userId) " +
                         "ORDER BY p.createdAt DESC")
         List<Payment> findAllDirectPaymentsByUser(@Param("userId") UUID userId);
 
-        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL AND p.isSettled = false " +
                         "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
         List<Payment> findDirectPaymentsFromTo(
                         @Param("fromId") UUID fromId, @Param("toId") UUID toId);
 
         @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p " +
-                        "WHERE p.group IS NULL " +
+                        "WHERE p.group IS NULL AND p.isSettled = false " +
                         "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
                         "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
         boolean existsDirectPaymentBetween(
                         @Param("user1") UUID user1, @Param("user2") UUID user2);
 
-        // SQL aggregation for direct payments
-        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
-                        "WHERE p.group IS NULL AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
-        BigDecimal sumDirectPaymentsFromTo(
-                        @Param("fromId") UUID fromId, @Param("toId") UUID toId);
+        // ── Balance aggregation: ONLY unsettled payments ──
 
-        @Modifying
-        @Query("DELETE FROM Payment p WHERE p.group IS NULL " +
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+                        "WHERE p.group IS NULL AND p.isSettled = false " +
                         "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
-        void deleteDirectPaymentsFromTo(
+        BigDecimal sumDirectPaymentsFromTo(
                         @Param("fromId") UUID fromId, @Param("toId") UUID toId);
 
         @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.fromUser.id = :userId")
@@ -69,9 +65,18 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.toUser.id = :userId")
         BigDecimal sumTotalPaymentsReceived(@Param("userId") UUID userId);
 
+        // ── Ledger: mark settled instead of deleting ──
+
         @Modifying(clearAutomatically = true, flushAutomatically = true)
-        @Query("DELETE FROM Payment p WHERE p.group IS NULL " +
+        @Query("UPDATE Payment p SET p.isSettled = true, p.settledAt = CURRENT_TIMESTAMP " +
+                        "WHERE p.isSettled = false AND p.group IS NULL " +
                         "AND ((p.fromUser.id = :u1 AND p.toUser.id = :u2) " +
                         "OR (p.fromUser.id = :u2 AND p.toUser.id = :u1))")
-        void deleteDirectPaymentsBetween(@Param("u1") UUID u1, @Param("u2") UUID u2);
+        void markDirectPaymentsSettled(@Param("u1") UUID u1, @Param("u2") UUID u2);
+
+        @Query(value = "SELECT * FROM payments p WHERE p.group_id IS NULL AND p.is_settled = true " +
+                        "AND ((p.from_user = :user1 AND p.to_user = :user2) " +
+                        "OR (p.from_user = :user2 AND p.to_user = :user1)) " +
+                        "ORDER BY p.settled_at DESC LIMIT 1", nativeQuery = true)
+        Payment findLastSettlementBetween(@Param("user1") UUID user1, @Param("user2") UUID user2);
 }

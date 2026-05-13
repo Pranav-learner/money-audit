@@ -171,4 +171,9 @@ public class DirectSplitController {
     public ResponseEntity<java.math.BigDecimal> getBalance(@PathVariable UUID friendId) {
         return ResponseEntity.ok(directPaymentService.getBalanceByUserId(friendId));
     }
+
+    @GetMapping("/{friendId}/borrow-rate")
+    public ResponseEntity<java.util.Map<String, Long>> getBorrowRate(@PathVariable UUID friendId) {
+        return ResponseEntity.ok(directExpenseService.getBorrowRate(friendId));
+    }
 }

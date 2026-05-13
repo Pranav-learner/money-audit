@@ -4,10 +4,12 @@ import com.Pranav.finance_tracker.group.entity.GroupExpense;
 import com.Pranav.finance_tracker.group.entity.GroupExpenseSplit;
 import com.Pranav.finance_tracker.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,23 +24,29 @@ public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseS
 
         void deleteByExpense(GroupExpense expense);
 
-        // ── SQL aggregation for direct balance — what fromUser owes toUser ──
+        // ── Balance queries: ONLY count unsettled splits ──
 
         @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-                        "WHERE s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
+                        "WHERE s.user.id = :fromUser AND s.expense.paidBy.id = :toUser " +
+                        "AND s.isSettled = false")
         BigDecimal sumDirectDebt(@Param("fromUser") UUID fromUser, @Param("toUser") UUID toUser);
 
         @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-                        "WHERE s.user.id = :userId AND s.expense.paidBy.id != :userId")
+                        "WHERE s.user.id = :userId AND s.expense.paidBy.id != :userId " +
+                        "AND s.isSettled = false")
         BigDecimal sumTotalOwedByUser(@Param("userId") UUID userId);
 
         @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-                        "WHERE s.expense.paidBy.id = :userId AND s.user.id != :userId")
+                        "WHERE s.expense.paidBy.id = :userId AND s.user.id != :userId " +
+                        "AND s.isSettled = false")
         BigDecimal sumTotalOwedToUser(@Param("userId") UUID userId);
 
-        @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-        @org.springframework.data.jpa.repository.Query("DELETE FROM GroupExpenseSplit s WHERE s.expense.group IS NULL " +
+        // ── Ledger: mark settled instead of deleting ──
+
+        @Modifying(clearAutomatically = true, flushAutomatically = true)
+        @Query("UPDATE GroupExpenseSplit s SET s.isSettled = true " +
+                        "WHERE s.isSettled = false AND s.expense.group IS NULL " +
                         "AND ((s.expense.paidBy.id = :u1 AND s.expense.otherUser.id = :u2) " +
                         "OR (s.expense.paidBy.id = :u2 AND s.expense.otherUser.id = :u1))")
-        void deleteDirectSplitsBetween(@Param("u1") UUID u1, @Param("u2") UUID u2);
+        void markDirectSplitsSettled(@Param("u1") UUID u1, @Param("u2") UUID u2);
 }

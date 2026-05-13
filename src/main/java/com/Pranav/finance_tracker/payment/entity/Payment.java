@@ -62,6 +62,11 @@ public class Payment {
 
     private LocalDateTime paidAt;
 
+    @Column(nullable = false)
+    private boolean isSettled = false;
+
+    private LocalDateTime settledAt;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();

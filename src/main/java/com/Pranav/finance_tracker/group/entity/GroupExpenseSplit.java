@@ -30,5 +30,8 @@ public class GroupExpenseSplit {
 
     @Column(nullable = false)
     private BigDecimal amountOwed;
+
+    @Column(nullable = false)
+    private boolean isSettled = false;
 }
 
