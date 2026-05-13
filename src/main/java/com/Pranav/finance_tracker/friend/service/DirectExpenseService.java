@@ -80,6 +80,7 @@ public class DirectExpenseService {
                 .build();
 
         expenseRepository.save(expense);
+        expenseRepository.deactivateDirectExpensesBeyondLimit(payer.getId(), nonPayer.getId());
 
         switch (request.getSplitType()) {
             case EQUAL -> handleEqualSplit(expense, currentUser, otherUser);

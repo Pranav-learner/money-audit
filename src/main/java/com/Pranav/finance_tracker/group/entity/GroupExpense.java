@@ -56,6 +56,9 @@ public class GroupExpense {
     @Column(nullable = false)
     private boolean isSettled = false;
 
+    @Builder.Default
+    private boolean isActive = true;
+
     private LocalDateTime settledAt;
 }
 

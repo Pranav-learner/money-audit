@@ -19,13 +19,14 @@ public interface GroupExpenseRepository extends JpaRepository<GroupExpense, UUID
 
         // ── Active direct expense queries (isSettled = false) ──
 
-        @Query("SELECT e FROM GroupExpense e WHERE e.group IS NULL AND e.isSettled = false " +
+        @Query("SELECT e FROM GroupExpense e WHERE e.group IS NULL AND e.isActive = true " +
                         "AND ((e.paidBy.id = :user1 AND e.otherUser.id = :user2) " +
-                        "OR (e.paidBy.id = :user2 AND e.otherUser.id = :user1))")
+                        "OR (e.paidBy.id = :user2 AND e.otherUser.id = :user1)) " +
+                        "ORDER BY e.createdAt DESC")
         List<GroupExpense> findDirectExpensesBetween(
                         @Param("user1") UUID user1, @Param("user2") UUID user2);
 
-        @Query("SELECT e FROM GroupExpense e WHERE e.group IS NULL AND e.isSettled = false " +
+        @Query("SELECT e FROM GroupExpense e WHERE e.group IS NULL AND e.isActive = true " +
                         "AND (e.paidBy.id = :userId OR e.otherUser.id = :userId) " +
                         "ORDER BY e.createdAt DESC")
         List<GroupExpense> findAllDirectExpensesByUser(@Param("userId") UUID userId);
@@ -62,4 +63,15 @@ public interface GroupExpenseRepository extends JpaRepository<GroupExpense, UUID
                         "AND ((e.paidBy.id = :u1 AND e.otherUser.id = :u2) " +
                         "OR (e.paidBy.id = :u2 AND e.otherUser.id = :u1))")
         void markDirectExpensesSettled(@Param("u1") UUID u1, @Param("u2") UUID u2);
+
+        @Modifying(clearAutomatically = true, flushAutomatically = true)
+        @Query(value = "UPDATE group_expenses SET is_active = false WHERE group_id IS NULL " +
+                        "AND ((paid_by = :u1 AND other_user_id = :u2) OR (paid_by = :u2 AND other_user_id = :u1)) " +
+                        "AND is_active = true AND id NOT IN (" +
+                        "  SELECT id FROM group_expenses " +
+                        "  WHERE group_id IS NULL AND ((paid_by = :u1 AND other_user_id = :u2) OR (paid_by = :u2 AND other_user_id = :u1)) " +
+                        "  AND is_active = true " +
+                        "  ORDER BY created_at DESC LIMIT 10" +
+                        ")", nativeQuery = true)
+        void deactivateDirectExpensesBeyondLimit(@Param("u1") UUID u1, @Param("u2") UUID u2);
 }

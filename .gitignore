@@ -35,3 +35,7 @@ build/
 ### Environment ###
 application.yaml
 docker-compose.yml
+uploads/
+.env
+.DS_Store
+*.log

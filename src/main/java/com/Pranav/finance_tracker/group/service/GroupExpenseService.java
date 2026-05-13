@@ -63,6 +63,10 @@ public class GroupExpenseService {
         }
 
         GroupExpense expense = createExpense(request, group, otherUser, currenntUser);
+        
+        if (group == null && otherUser != null) {
+            groupExpenseRepository.deactivateDirectExpensesBeyondLimit(currenntUser.getId(), otherUser.getId());
+        }
 
         switch (request.getSplitType()) {
             case EQUAL -> handleEqualSplit(expense, group, otherUser, currenntUser);
