@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class CreateDirectExpenseRequest {
     private String otherUserPhone;
     private java.util.UUID friendId;
+    private java.util.UUID paidByUserId;
 
     @NotBlank(message = "Title is required")
     private String title;

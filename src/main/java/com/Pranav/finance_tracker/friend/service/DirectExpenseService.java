@@ -52,13 +52,21 @@ public class DirectExpenseService {
             throw new RuntimeException("Total amount must be positive");
         }
 
+        User payer = currentUser;
+        User nonPayer = otherUser;
+
+        if (request.getPaidByUserId() != null && request.getPaidByUserId().equals(otherUser.getId())) {
+            payer = otherUser;
+            nonPayer = currentUser;
+        }
+
         // Create expense with group = null (direct)
         GroupExpense expense = GroupExpense.builder()
                 .title(request.getTitle())
                 .totalAmount(request.getTotalAmount())
                 .expenseDate(request.getExpenseDate())
-                .paidBy(currentUser)
-                .otherUser(otherUser)
+                .paidBy(payer)
+                .otherUser(nonPayer)
                 .splitType(request.getSplitType())
                 .group(null) // key: null = direct expense
                 .createdAt(LocalDateTime.now())
@@ -72,11 +80,12 @@ public class DirectExpenseService {
             case PERCENTAGE -> handlePercentageSplit(expense, currentUser, otherUser, request);
         }
 
-        // Send Notification
+        // Send Notification to the other participant (whoever it is)
+        User notificationRecipient = (payer.getId().equals(currentUser.getId())) ? otherUser : currentUser;
         String subject = "New Direct Expense: " + expense.getTitle();
         String body = String.format("Hello %s,\n\n%s has added a direct expense: '%s' of %.2f.",
-                otherUser.getName(), currentUser.getName(), expense.getTitle(), expense.getTotalAmount());
-        emailService.sendEmail(otherUser, subject, body);
+                notificationRecipient.getName(), payer.getName(), expense.getTitle(), expense.getTotalAmount());
+        emailService.sendEmail(notificationRecipient, subject, body);
 
         return "Direct expense created successfully";
     }
@@ -107,34 +116,38 @@ public class DirectExpenseService {
                 .expense(expense).user(other).amountOwed(half.add(remainder)).build());
     }
 
-    private void handleUnequalSplit(GroupExpense expense, User payer, User other,
+    private void handleUnequalSplit(GroupExpense expense, User currentUser, User otherUser,
                                     CreateDirectExpenseRequest request) {
-        if (request.getMyShare().add(request.getOtherShare())
-                .compareTo(expense.getTotalAmount()) != 0) {
-            throw new RuntimeException("Shares must sum to total amount");
+        BigDecimal myShare = request.getMyShare() != null ? request.getMyShare() : BigDecimal.ZERO;
+        BigDecimal otherShare = request.getOtherShare() != null ? request.getOtherShare() : BigDecimal.ZERO;
+
+        if (myShare.add(otherShare).compareTo(expense.getTotalAmount()) != 0) {
+            throw new RuntimeException("Shares must sum to total amount. Sum: " + myShare.add(otherShare) + ", Total: " + expense.getTotalAmount());
         }
 
         splitRepository.save(GroupExpenseSplit.builder()
-                .expense(expense).user(payer).amountOwed(request.getMyShare()).build());
+                .expense(expense).user(currentUser).amountOwed(myShare).build());
         splitRepository.save(GroupExpenseSplit.builder()
-                .expense(expense).user(other).amountOwed(request.getOtherShare()).build());
+                .expense(expense).user(otherUser).amountOwed(otherShare).build());
     }
 
-    private void handlePercentageSplit(GroupExpense expense, User payer, User other,
+    private void handlePercentageSplit(GroupExpense expense, User currentUser, User otherUser,
                                        CreateDirectExpenseRequest request) {
-        if (request.getMyPercentage().add(request.getOtherPercentage())
-                .compareTo(BigDecimal.valueOf(100)) != 0) {
+        BigDecimal myPct = request.getMyPercentage() != null ? request.getMyPercentage() : BigDecimal.ZERO;
+        BigDecimal otherPct = request.getOtherPercentage() != null ? request.getOtherPercentage() : BigDecimal.ZERO;
+
+        if (myPct.add(otherPct).compareTo(BigDecimal.valueOf(100)) != 0) {
             throw new RuntimeException("Percentages must sum to 100");
         }
 
         BigDecimal total = expense.getTotalAmount();
-        BigDecimal myAmount = total.multiply(request.getMyPercentage())
+        BigDecimal myAmount = total.multiply(myPct)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal otherAmount = total.subtract(myAmount); // rounding correction
 
         splitRepository.save(GroupExpenseSplit.builder()
-                .expense(expense).user(payer).amountOwed(myAmount).build());
+                .expense(expense).user(currentUser).amountOwed(myAmount).build());
         splitRepository.save(GroupExpenseSplit.builder()
-                .expense(expense).user(other).amountOwed(otherAmount).build());
+                .expense(expense).user(otherUser).amountOwed(otherAmount).build());
     }
 }
