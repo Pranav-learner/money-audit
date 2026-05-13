@@ -72,8 +72,8 @@ public class AnalyticsService {
         BigDecimal spentVal = spent != null ? spent : BigDecimal.ZERO;
         BigDecimal remaining = limit.subtract(spentVal);
         int percentage = (limit.compareTo(BigDecimal.ZERO) > 0)
-            ? spentVal.multiply(BigDecimal.valueOf(100)).divide(limit, 0, RoundingMode.HALF_UP).intValue()
-            : 0;
+                ? spentVal.multiply(BigDecimal.valueOf(100)).divide(limit, 0, RoundingMode.HALF_UP).intValue()
+                : 0;
 
         String status = "NORMAL";
         if (spentVal.compareTo(limit) > 0) {
@@ -100,9 +100,9 @@ public class AnalyticsService {
         BigDecimal totalSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
         List<CategoryDistributionResponse> distribution = getCategoryDistribution(user, month, year, "MONTH");
 
-        String topCategory = (distribution != null && !distribution.isEmpty()) 
-            ? distribution.get(0).getName() 
-            : "None";
+        String topCategory = (distribution != null && !distribution.isEmpty())
+                ? distribution.get(0).getName()
+                : "None";
 
         return FinancialSummaryResponse.builder()
                 .totalIncomeSaved(totalSavings != null ? totalSavings : BigDecimal.ZERO)
@@ -118,16 +118,16 @@ public class AnalyticsService {
     public List<CategoryDistributionResponse> getCategoryDistribution(User user, int month, int year, String period) {
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
         LocalDate start;
-        
+
         if ("WEEK".equalsIgnoreCase(period)) {
             start = end.minusDays(7);
         } else {
             start = LocalDate.of(year, month, 1);
         }
-        
+
         List<CategoryDistributionResponse> list = expenseRepository.getCategoryDistribution(user, start, end);
-        String[] colors = {"#6366f1", "#2dd4a8", "#fbbf24", "#f87171", "#a78bfa", "#f472b6"};
-        
+        String[] colors = { "#6366f1", "#2dd4a8", "#fbbf24", "#f87171", "#a78bfa", "#f472b6" };
+
         for (int i = 0; i < list.size(); i++) {
             list.get(i).setColor(colors[i % colors.length]);
         }
@@ -138,18 +138,16 @@ public class AnalyticsService {
         List<Object[]> raw = expenseRepository.getMonthlySpendingTrend(user, year);
         Map<Integer, BigDecimal> monthlySums = raw.stream()
                 .collect(Collectors.toMap(
-                    obj -> ((Number) obj[0]).intValue(),
-                    obj -> (BigDecimal) obj[1]
-                ));
+                        obj -> ((Number) obj[0]).intValue(),
+                        obj -> (BigDecimal) obj[1]));
 
-        String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        String[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         List<Map<String, Object>> trend = new ArrayList<>();
-        
+
         for (int i = 1; i <= 12; i++) {
             trend.add(Map.of(
-                "month", months[i - 1],
-                "amount", monthlySums.getOrDefault(i, BigDecimal.ZERO)
-            ));
+                    "month", months[i - 1],
+                    "amount", monthlySums.getOrDefault(i, BigDecimal.ZERO)));
         }
         return trend;
     }
@@ -171,7 +169,7 @@ public class AnalyticsService {
     public BalanceOverviewResponse getBalanceOverview(User user) {
         BigDecimal owedByUser = splitRepository.sumTotalOwedByUser(user.getId());
         BigDecimal owedToUser = splitRepository.sumTotalOwedToUser(user.getId());
-        
+
         BigDecimal paymentsSent = paymentRepository.sumTotalPaymentsSent(user.getId());
         BigDecimal paymentsReceived = paymentRepository.sumTotalPaymentsReceived(user.getId());
 
@@ -196,7 +194,8 @@ public class AnalyticsService {
 
         // Net Balance = (Actual Cash In) - (Actual Cash Out)
         // In: Savings + Received Settlements
-        // Out: Personal Expenses + Settlements I Paid + Total Outlay I Paid for others up front
+        // Out: Personal Expenses + Settlements I Paid + Total Outlay I Paid for others
+        // up front
         BigDecimal netBalance = savingsVal.add(receivedVal)
                 .subtract(personalVal)
                 .subtract(sentVal)
@@ -218,7 +217,7 @@ public class AnalyticsService {
 
         BigDecimal totalSavings = savingRepository.sumByUserAndMonthAndYear(user, month, year);
         BigDecimal totalSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
-        
+
         List<BudgetUsageResponse> budgetUsage = getBudgetUsage(user, month, year);
         List<BudgetUsageResponse> alerts = budgetUsage.stream()
                 .filter(b -> !"NORMAL".equals(b.getStatus()))
@@ -248,7 +247,8 @@ public class AnalyticsService {
         int budgetRemainingPct = 0;
         if (totalBudget.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal remaining = totalBudget.subtract(totalBudgetSpent);
-            if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
+            if (remaining.compareTo(BigDecimal.ZERO) < 0)
+                remaining = BigDecimal.ZERO;
             budgetRemainingPct = remaining.multiply(BigDecimal.valueOf(100))
                     .divide(totalBudget, 0, RoundingMode.HALF_UP).intValue();
         }
@@ -259,7 +259,7 @@ public class AnalyticsService {
         int pYear = prevMonthDate.getYear();
         LocalDate pStart = prevMonthDate.withDayOfMonth(1);
         LocalDate pEnd = prevMonthDate.withDayOfMonth(prevMonthDate.lengthOfMonth());
-        
+
         BigDecimal prevSavings = savingRepository.sumByUserAndMonthAndYear(user, pMonth, pYear);
         BigDecimal prevSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, pStart, pEnd);
 
@@ -295,32 +295,32 @@ public class AnalyticsService {
         BigDecimal growth = curr.subtract(previous)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(previous, 1, RoundingMode.HALF_UP);
-        
+
         return (growth.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "") + growth + "%";
     }
 
     private List<WeeklyTrendItem> getWeeklyTrend(User user) {
         LocalDate end = LocalDate.now();
         LocalDate start = end.minusWeeks(8);
-        
-        List<com.Pranav.finance_tracker.expense.entity.Expense> expenses = 
-                expenseRepository.findByUserAndExpenseDateBetween(user, start, end);
+
+        List<com.Pranav.finance_tracker.expense.entity.Expense> expenses = expenseRepository
+                .findByUserAndExpenseDateBetween(user, start, end);
 
         // Group by week (using start of week as key)
         Map<LocalDate, BigDecimal> weeklySums = expenses.stream()
                 .filter(e -> e.getExpenseDate() != null)
                 .collect(Collectors.groupingBy(
-                        e -> e.getExpenseDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
+                        e -> e.getExpenseDate()
+                                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
                         Collectors.mapping(
                                 com.Pranav.finance_tracker.expense.entity.Expense::getAmount,
-                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
-                        )
-                ));
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
 
         // Ensure all 8 weeks are present even if zero
         List<WeeklyTrendItem> trend = new ArrayList<>();
-        LocalDate currentWeek = start.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-        
+        LocalDate currentWeek = start
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+
         while (!currentWeek.isAfter(end)) {
             trend.add(new WeeklyTrendItem(currentWeek, weeklySums.getOrDefault(currentWeek, BigDecimal.ZERO)));
             currentWeek = currentWeek.plusWeeks(1);

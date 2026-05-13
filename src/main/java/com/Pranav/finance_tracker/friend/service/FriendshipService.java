@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -31,7 +32,7 @@ public class FriendshipService {
     public List<UserSearchResponse> searchUsers(String query) {
         User currentUser = securityUtils.getCurrentUser();
 
-        return userRepository.findByNameContainingIgnoreCase(query).stream()
+        return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrPhoneContainingIgnoreCase(query, query, query).stream()
                 .filter(u -> !u.getId().equals(currentUser.getId())) // exclude self
                 .map(u -> {
                     String relationshipStatus = resolveRelationshipStatus(currentUser, u);
@@ -83,18 +84,31 @@ public class FriendshipService {
         }
 
         // Check if any relationship already exists (in either direction)
-        if (friendshipRepository.existsBetweenUsers(sender, receiver)) {
-            throw new RuntimeException("A friend request already exists between you and this user");
+        Optional<Friendship> existing = friendshipRepository.findRelationshipBetween(sender, receiver);
+        if (existing.isPresent()) {
+            Friendship f = existing.get();
+            if (f.getStatus() == FriendshipStatus.ACCEPTED) {
+                throw new RuntimeException("You are already friends with this user");
+            }
+            if (f.getStatus() == FriendshipStatus.PENDING) {
+                throw new RuntimeException("A friend request is already pending between you and this user");
+            }
+            
+            // If REJECTED, we can send a new request
+            f.setSender(sender);
+            f.setReceiver(receiver);
+            f.setStatus(FriendshipStatus.PENDING);
+            f.setUpdatedAt(LocalDateTime.now());
+            friendshipRepository.save(f);
+        } else {
+            Friendship friendship = Friendship.builder()
+                    .sender(sender)
+                    .receiver(receiver)
+                    .status(FriendshipStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            friendshipRepository.save(friendship);
         }
-
-        Friendship friendship = Friendship.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .status(FriendshipStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        friendshipRepository.save(friendship);
 
         // Send Notification
         String subject = "New Friend Request on Finance Tracker";
@@ -178,8 +192,9 @@ public class FriendshipService {
                     return FriendResponse.builder()
                             .friendshipId(f.getId())
                             .userId(friend.getId())
-                            .userName(friend.getName())
+                            .name(friend.getName())
                             .email(friend.getEmail())
+                            .phone(friend.getPhone())
                             .status(f.getStatus())
                             .since(f.getUpdatedAt() != null ? f.getUpdatedAt() : f.getCreatedAt())
                             .build();
@@ -197,8 +212,9 @@ public class FriendshipService {
                 .map(f -> FriendResponse.builder()
                         .friendshipId(f.getId())
                         .userId(f.getSender().getId())
-                        .userName(f.getSender().getName())
+                        .name(f.getSender().getName())
                         .email(f.getSender().getEmail())
+                        .phone(f.getSender().getPhone())
                         .status(f.getStatus())
                         .since(f.getCreatedAt())
                         .build())

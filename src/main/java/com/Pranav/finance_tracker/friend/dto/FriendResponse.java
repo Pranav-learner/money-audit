@@ -14,8 +14,9 @@ import java.util.UUID;
 public class FriendResponse {
     private UUID friendshipId;
     private UUID userId;
-    private String userName;
+    private String name;
     private String email;
+    private String phone;
     private FriendshipStatus status;
     private LocalDateTime since;
 }
