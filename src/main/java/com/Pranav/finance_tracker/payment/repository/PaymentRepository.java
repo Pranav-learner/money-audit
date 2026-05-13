@@ -14,53 +14,64 @@ import java.util.UUID;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
-    // ── Group payment queries ──
+        // ── Group payment queries ──
 
-    List<Payment> findByGroupId(UUID groupId);
+        List<Payment> findByGroupId(UUID groupId);
 
-    List<Payment> findByGroupIdAndFromUserIdAndToUserId(UUID groupId, UUID fromUserId, UUID toUserId);
+        List<Payment> findByGroupIdAndFromUserIdAndToUserId(UUID groupId, UUID fromUserId, UUID toUserId);
 
-    void deleteByGroupIdAndFromUserIdAndToUserId(UUID groupId, UUID fromUserId, UUID toUserId);
+        void deleteByGroupIdAndFromUserIdAndToUserId(UUID groupId, UUID fromUserId, UUID toUserId);
 
-    boolean existsByRequestId(String requestId);
+        boolean existsByRequestId(String requestId);
 
-    boolean existsByGroupId(UUID groupId);
+        boolean existsByGroupId(UUID groupId);
 
-    // ── Direct payment queries (group IS NULL) ──
+        // ── Direct payment queries (group IS NULL) ──
 
-    @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
-            "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
-            "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
-    List<Payment> findDirectPaymentsBetween(
-            @Param("user1") UUID user1, @Param("user2") UUID user2);
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+                        "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
+                        "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
+        List<Payment> findDirectPaymentsBetween(
+                        @Param("user1") UUID user1, @Param("user2") UUID user2);
 
-    @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
-            "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
-    List<Payment> findDirectPaymentsFromTo(
-            @Param("fromId") UUID fromId, @Param("toId") UUID toId);
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+                        "AND (p.fromUser.id = :userId OR p.toUser.id = :userId) " +
+                        "ORDER BY p.createdAt DESC")
+        List<Payment> findAllDirectPaymentsByUser(@Param("userId") UUID userId);
 
-    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p " +
-            "WHERE p.group IS NULL " +
-            "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
-            "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
-    boolean existsDirectPaymentBetween(
-            @Param("user1") UUID user1, @Param("user2") UUID user2);
+        @Query("SELECT p FROM Payment p WHERE p.group IS NULL " +
+                        "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
+        List<Payment> findDirectPaymentsFromTo(
+                        @Param("fromId") UUID fromId, @Param("toId") UUID toId);
 
-    // SQL aggregation for direct payments
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
-            "WHERE p.group IS NULL AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
-    BigDecimal sumDirectPaymentsFromTo(
-            @Param("fromId") UUID fromId, @Param("toId") UUID toId);
+        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p " +
+                        "WHERE p.group IS NULL " +
+                        "AND ((p.fromUser.id = :user1 AND p.toUser.id = :user2) " +
+                        "OR (p.fromUser.id = :user2 AND p.toUser.id = :user1))")
+        boolean existsDirectPaymentBetween(
+                        @Param("user1") UUID user1, @Param("user2") UUID user2);
 
-    @Modifying
-    @Query("DELETE FROM Payment p WHERE p.group IS NULL " +
-            "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
-    void deleteDirectPaymentsFromTo(
-            @Param("fromId") UUID fromId, @Param("toId") UUID toId);
+        // SQL aggregation for direct payments
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+                        "WHERE p.group IS NULL AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
+        BigDecimal sumDirectPaymentsFromTo(
+                        @Param("fromId") UUID fromId, @Param("toId") UUID toId);
 
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.fromUser.id = :userId")
-    BigDecimal sumTotalPaymentsSent(@Param("userId") UUID userId);
+        @Modifying
+        @Query("DELETE FROM Payment p WHERE p.group IS NULL " +
+                        "AND p.fromUser.id = :fromId AND p.toUser.id = :toId")
+        void deleteDirectPaymentsFromTo(
+                        @Param("fromId") UUID fromId, @Param("toId") UUID toId);
 
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.toUser.id = :userId")
-    BigDecimal sumTotalPaymentsReceived(@Param("userId") UUID userId);
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.fromUser.id = :userId")
+        BigDecimal sumTotalPaymentsSent(@Param("userId") UUID userId);
+
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.toUser.id = :userId")
+        BigDecimal sumTotalPaymentsReceived(@Param("userId") UUID userId);
+
+        @Modifying(clearAutomatically = true, flushAutomatically = true)
+        @Query("DELETE FROM Payment p WHERE p.group IS NULL " +
+                        "AND ((p.fromUser.id = :u1 AND p.toUser.id = :u2) " +
+                        "OR (p.fromUser.id = :u2 AND p.toUser.id = :u1))")
+        void deleteDirectPaymentsBetween(@Param("u1") UUID u1, @Param("u2") UUID u2);
 }

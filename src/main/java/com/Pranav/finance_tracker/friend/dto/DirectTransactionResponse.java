@@ -12,8 +12,12 @@ import java.util.UUID;
 public class DirectTransactionResponse {
     private UUID id;
     private String description;
-    private BigDecimal amount;
+    private BigDecimal amount;       // total bill amount
+    private BigDecimal myShare;      // current user's share
+    private BigDecimal otherShare;   // other user's share
     private UUID paidByUserId;
     private LocalDateTime date;
     private String type; // "EXPENSE" or "PAYMENT"
+    private String friendName;       // name of the other participant
+    private UUID friendId;           // id of the other participant
 }

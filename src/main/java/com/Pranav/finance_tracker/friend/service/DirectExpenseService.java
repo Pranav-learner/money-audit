@@ -103,6 +103,11 @@ public class DirectExpenseService {
         return expenseRepository.findDirectExpensesBetween(currentUser.getId(), otherUserId);
     }
 
+    public List<GroupExpense> getAllExpensesByUser() {
+        User currentUser = securityUtils.getCurrentUser();
+        return expenseRepository.findAllDirectExpensesByUser(currentUser.getId());
+    }
+
     // ── Split handlers ──
 
     private void handleEqualSplit(GroupExpense expense, User payer, User other) {

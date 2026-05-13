@@ -13,27 +13,32 @@ import java.util.UUID;
 
 public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseSplit, UUID> {
 
+        List<GroupExpenseSplit> findByUser(User user);
 
-    List<GroupExpenseSplit> findByUser(User user);
+        @Query("SELECT s FROM GroupExpenseSplit s WHERE s.expense.group.id = :groupId")
+        List<GroupExpenseSplit> findByExpenseGroupId(@Param("groupId") UUID groupId);
 
-    @Query("SELECT s FROM GroupExpenseSplit s WHERE s.expense.group.id = :groupId")
-    List<GroupExpenseSplit> findByExpenseGroupId(@Param("groupId") UUID groupId);
+        List<GroupExpenseSplit> findByExpense(GroupExpense expense);
 
-    List<GroupExpenseSplit> findByExpense(GroupExpense expense);
+        void deleteByExpense(GroupExpense expense);
 
-    void deleteByExpense(GroupExpense expense);
+        // ── SQL aggregation for direct balance — what fromUser owes toUser ──
 
-    // ── SQL aggregation for direct balance — what fromUser owes toUser ──
+        @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+                        "WHERE s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
+        BigDecimal sumDirectDebt(@Param("fromUser") UUID fromUser, @Param("toUser") UUID toUser);
 
-    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-            "WHERE s.user.id = :fromUser AND s.expense.paidBy.id = :toUser")
-    BigDecimal sumDirectDebt(@Param("fromUser") UUID fromUser, @Param("toUser") UUID toUser);
+        @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+                        "WHERE s.user.id = :userId AND s.expense.paidBy.id != :userId")
+        BigDecimal sumTotalOwedByUser(@Param("userId") UUID userId);
 
-    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-            "WHERE s.user.id = :userId AND s.expense.paidBy.id != :userId")
-    BigDecimal sumTotalOwedByUser(@Param("userId") UUID userId);
+        @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+                        "WHERE s.expense.paidBy.id = :userId AND s.user.id != :userId")
+        BigDecimal sumTotalOwedToUser(@Param("userId") UUID userId);
 
-    @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
-            "WHERE s.expense.paidBy.id = :userId AND s.user.id != :userId")
-    BigDecimal sumTotalOwedToUser(@Param("userId") UUID userId);
+        @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+        @org.springframework.data.jpa.repository.Query("DELETE FROM GroupExpenseSplit s WHERE s.expense.group IS NULL " +
+                        "AND ((s.expense.paidBy.id = :u1 AND s.expense.otherUser.id = :u2) " +
+                        "OR (s.expense.paidBy.id = :u2 AND s.expense.otherUser.id = :u1))")
+        void deleteDirectSplitsBetween(@Param("u1") UUID u1, @Param("u2") UUID u2);
 }

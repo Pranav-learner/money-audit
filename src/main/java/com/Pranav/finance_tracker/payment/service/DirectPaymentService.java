@@ -10,6 +10,8 @@ import com.Pranav.finance_tracker.payment.enums.PaymentStatus;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
+import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;
+import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,8 @@ import java.util.UUID;
 public class DirectPaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final GroupExpenseRepository expenseRepository;
+    private final GroupExpenseSplitRepository splitRepository;
     private final DirectBalanceService directBalanceService;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
@@ -83,6 +87,14 @@ public class DirectPaymentService {
 
         paymentRepository.save(payment);
 
+        // Check if fully settled after this payment
+        BigDecimal newDebt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
+        if (newDebt.abs().compareTo(new BigDecimal("0.001")) < 0) {
+            splitRepository.deleteDirectSplitsBetween(fromUser.getId(), toUser.getId());
+            expenseRepository.deleteDirectExpensesBetween(fromUser.getId(), toUser.getId());
+            paymentRepository.deleteDirectPaymentsBetween(fromUser.getId(), toUser.getId());
+        }
+
         // Send Notification
         String subject = "Payment Received: " + payment.getAmount();
         String body = String.format("Hello %s,\n\n%s has paid you %.2f directly.\nNote: %s",
@@ -94,7 +106,8 @@ public class DirectPaymentService {
     }
 
     @Transactional
-    public void recordRazorpayPayment(User fromUser, User toUser, BigDecimal amount, String orderId, String paymentId, String note) {
+    public void recordRazorpayPayment(User fromUser, User toUser, BigDecimal amount, String orderId, String paymentId,
+            String note) {
         Payment payment = Payment.builder()
                 .fromUser(fromUser)
                 .toUser(toUser)
@@ -110,6 +123,13 @@ public class DirectPaymentService {
                 .build();
 
         paymentRepository.save(payment);
+
+        BigDecimal newDebt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
+        if (newDebt.abs().compareTo(new BigDecimal("0.001")) < 0) {
+            splitRepository.deleteDirectSplitsBetween(fromUser.getId(), toUser.getId());
+            expenseRepository.deleteDirectExpensesBetween(fromUser.getId(), toUser.getId());
+            paymentRepository.deleteDirectPaymentsBetween(fromUser.getId(), toUser.getId());
+        }
 
         // Send Notification
         String subject = "Razorpay Payment Received: " + amount;
@@ -130,6 +150,11 @@ public class DirectPaymentService {
     public List<Payment> getPaymentHistoryByUserId(UUID otherUserId) {
         User currentUser = securityUtils.getCurrentUser();
         return paymentRepository.findDirectPaymentsBetween(currentUser.getId(), otherUserId);
+    }
+
+    public List<Payment> getAllPaymentsByUser() {
+        User currentUser = securityUtils.getCurrentUser();
+        return paymentRepository.findAllDirectPaymentsByUser(currentUser.getId());
     }
 
     public BigDecimal getBalance(String otherUserPhone) {
