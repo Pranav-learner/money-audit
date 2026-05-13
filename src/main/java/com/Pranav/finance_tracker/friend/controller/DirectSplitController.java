@@ -72,7 +72,7 @@ public class DirectSplitController {
 
             transactions.add(DirectTransactionResponse.builder()
                     .id(e.getId())
-                    .description(e.getTitle())
+                    .title(e.getTitle())
                     .amount(e.getTotalAmount())
                     .myShare(myShare)
                     .otherShare(otherShare)
@@ -93,7 +93,7 @@ public class DirectSplitController {
 
             transactions.add(DirectTransactionResponse.builder()
                     .id(p.getId())
-                    .description(p.getNote() != null ? p.getNote() : "Payment Settlement")
+                    .title(p.getNote() != null ? p.getNote() : "Payment Settlement")
                     .amount(p.getAmount())
                     .paidByUserId(p.getFromUser().getId())
                     .date(p.getCreatedAt())
@@ -134,7 +134,7 @@ public class DirectSplitController {
 
             transactions.add(DirectTransactionResponse.builder()
                     .id(e.getId())
-                    .description(e.getTitle())
+                    .title(e.getTitle())
                     .amount(e.getTotalAmount())
                     .myShare(myShare)
                     .otherShare(otherShare)
@@ -149,7 +149,7 @@ public class DirectSplitController {
         for (Payment p : payments) {
             transactions.add(DirectTransactionResponse.builder()
                     .id(p.getId())
-                    .description(p.getNote() != null ? p.getNote() : "Payment Settlement")
+                    .title(p.getNote() != null ? p.getNote() : "Payment Settlement")
                     .amount(p.getAmount())
                     .paidByUserId(p.getFromUser().getId())
                     .date(p.getCreatedAt())

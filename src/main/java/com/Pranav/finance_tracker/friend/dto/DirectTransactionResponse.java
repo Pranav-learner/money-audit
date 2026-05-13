@@ -11,7 +11,7 @@ import java.util.UUID;
 @Builder
 public class DirectTransactionResponse {
     private UUID id;
-    private String description;
+    private String title;
     private BigDecimal amount;       // total bill amount
     private BigDecimal myShare;      // current user's share
     private BigDecimal otherShare;   // other user's share

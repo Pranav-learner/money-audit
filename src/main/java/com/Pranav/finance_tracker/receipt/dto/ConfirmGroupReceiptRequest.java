@@ -23,7 +23,6 @@ public class ConfirmGroupReceiptRequest {
     @NotNull
     private LocalDate expenseDate;
 
-    private String description;
 
     private UUID categoryId;
 
