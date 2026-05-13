@@ -16,6 +16,7 @@ import java.util.UUID;
 @Setter
 public class CreateGroupExpenseRequest {
     private UUID groupId;
+    private UUID otherUserId; // For direct expenses
     private String title;
     private BigDecimal totalAmount;
     private LocalDate ExpenseDate;

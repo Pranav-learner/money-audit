@@ -10,6 +10,8 @@ import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import com.Pranav.finance_tracker.payment.dto.CreateDirectPaymentRequest;
 import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.service.DirectPaymentService;
+import com.Pranav.finance_tracker.receipt.entity.Receipt;
+import com.Pranav.finance_tracker.receipt.repository.ReceiptRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,6 +34,7 @@ public class DirectSplitController {
     private final DirectExpenseService directExpenseService;
     private final DirectPaymentService directPaymentService;
     private final GroupExpenseSplitRepository splitRepository;
+    private final ReceiptRepository receiptRepository;
     private final SecurityUtils securityUtils;
 
     @GetMapping("/all")
@@ -78,6 +81,8 @@ public class DirectSplitController {
                     .type("EXPENSE")
                     .friendName(friendName)
                     .friendId(friendId)
+                    .receiptUrl(receiptRepository.findByLinkedGroupExpenseId(e.getId())
+                            .map(Receipt::getStoragePath).orElse(null))
                     .build());
         }
 
@@ -136,6 +141,8 @@ public class DirectSplitController {
                     .paidByUserId(e.getPaidBy().getId())
                     .date(e.getCreatedAt())
                     .type("EXPENSE")
+                    .receiptUrl(receiptRepository.findByLinkedGroupExpenseId(e.getId())
+                            .map(Receipt::getStoragePath).orElse(null))
                     .build());
         }
 

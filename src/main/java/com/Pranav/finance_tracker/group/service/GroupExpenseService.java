@@ -42,35 +42,44 @@ public class GroupExpenseService {
 
     @Transactional
     public GroupExpense createGroupExpense(CreateGroupExpenseRequest request ){
-
         User currenntUser = securityUtils.getCurrentUser();
+        Group group = null;
+        User otherUser = null;
 
-        Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(()-> new RuntimeException("Group not found"));
-
-        validateUserIsGroupMember(group, currenntUser);
+        if (request.getGroupId() != null) {
+            group = groupRepository.findById(request.getGroupId())
+                    .orElseThrow(()-> new RuntimeException("Group not found"));
+            validateUserIsGroupMember(group, currenntUser);
+        } else if (request.getOtherUserId() != null) {
+            otherUser = userRepository.findById(request.getOtherUserId())
+                    .orElseThrow(() -> new RuntimeException("Other user not found"));
+        } else {
+            throw new RuntimeException("Either Group ID or Other User ID must be provided");
+        }
 
         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Total amount must be positive");
         }
 
-        GroupExpense expense = createExpense(request,group, currenntUser);
+        GroupExpense expense = createExpense(request, group, otherUser, currenntUser);
 
         switch (request.getSplitType()) {
-            case EQUAL -> handleEqualSplit(expense, group);
-            case UNEQUAL -> handleUnequalSplit(expense, group, request.getSplits());
-            case PERCENTAGE -> handlePercentageSplit(expense,group,request.getSplits());
+            case EQUAL -> handleEqualSplit(expense, group, otherUser, currenntUser);
+            case UNEQUAL -> handleUnequalSplit(expense, group, otherUser, request.getSplits());
+            case PERCENTAGE -> handlePercentageSplit(expense, group, otherUser, request.getSplits());
         }
 
-        // Send Notifications to all group members except payer
-        List<GroupMember> members = groupMemberRepository.findByGroup(group);
-        for (GroupMember member : members) {
-            if (!member.getUser().getId().equals(currenntUser.getId())) {
-                String subject = "New Group Expense: " + expense.getTitle();
-                String body = String.format("Hello %s,\n\nA new expense '%s' of %.2f has been added to group '%s' by %s.",
-                        member.getUser().getName(), expense.getTitle(), expense.getTotalAmount(),
-                        group.getName(), currenntUser.getName());
-                emailService.sendEmail(member.getUser(), subject, body);
+        // Send Notification if group exists
+        if (group != null) {
+            List<GroupMember> members = groupMemberRepository.findByGroup(group);
+            for (GroupMember member : members) {
+                if (!member.getUser().getId().equals(currenntUser.getId())) {
+                    String subject = "New Group Expense: " + expense.getTitle();
+                    String body = String.format("Hello %s,\n\nA new expense '%s' of %.2f has been added to group '%s' by %s.",
+                            member.getUser().getName(), expense.getTitle(), expense.getTotalAmount(),
+                            group.getName(), currenntUser.getName());
+                    emailService.sendEmail(member.getUser(), subject, body);
+                }
             }
         }
         return expense;
@@ -84,7 +93,7 @@ public class GroupExpenseService {
     }
 
     private GroupExpense createExpense(
-            CreateGroupExpenseRequest request, Group group, User currentUser) {
+            CreateGroupExpenseRequest request, Group group, User otherUser, User currentUser) {
 
         GroupExpense expense = GroupExpense.builder()
                 .title(request.getTitle())
@@ -92,6 +101,7 @@ public class GroupExpenseService {
                 .expenseDate(request.getExpenseDate())
                 .paidBy(currentUser)
                 .group(group)
+                .otherUser(otherUser)
                 .splitType(request.getSplitType())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -99,20 +109,27 @@ public class GroupExpenseService {
         return groupExpenseRepository.save(expense);
     }
 
-    private void handleEqualSplit(GroupExpense expense, Group group){
-        List<GroupMember> members = groupMemberRepository.findByGroup(group);
-        if(members.isEmpty()){
-            throw new RuntimeException("No members in group");
+    private void handleEqualSplit(GroupExpense expense, Group group, User otherUser, User currentUser){
+        List<User> participants = new ArrayList<>();
+        if (group != null) {
+            participants.addAll(groupMemberRepository.findByGroup(group).stream().map(GroupMember::getUser).toList());
+        } else {
+            participants.add(currentUser);
+            participants.add(otherUser);
+        }
+
+        if(participants.isEmpty()){
+            throw new RuntimeException("No participants to split with");
         }
 
         BigDecimal total = expense.getTotalAmount();
         BigDecimal splitAmount = total.divide(
-                BigDecimal.valueOf(members.size()), 2, RoundingMode.HALF_UP);
+                BigDecimal.valueOf(participants.size()), 2, RoundingMode.HALF_UP);
 
-        for( GroupMember member : members) {
+        for(User user : participants) {
             GroupExpenseSplit split = GroupExpenseSplit.builder()
                     .expense(expense)
-                    .user(member.getUser())
+                    .user(user)
                     .amountOwed(splitAmount)
                     .build();
             groupExpenseSplitRepository.save(split);
@@ -120,15 +137,10 @@ public class GroupExpenseService {
     }
 
     private void handleUnequalSplit(
-            GroupExpense expense, Group group, List<SplitDetail> splits) {
+            GroupExpense expense, Group group, User otherUser, List<SplitDetail> splits) {
 
         if (splits == null || splits.isEmpty()) {
             throw new RuntimeException("Split details required");
-        }
-
-        List<GroupMember> members = groupMemberRepository.findByGroup(group);
-        if (splits.size() != members.size()) {
-            throw new RuntimeException("All group members must be included");
         }
 
         BigDecimal totalCalculated = BigDecimal.ZERO;
@@ -147,7 +159,7 @@ public class GroupExpenseService {
             User user = userRepository.findById(detail.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (!groupMemberRepository.existsByGroupAndUser(group, user)) {
+            if (group != null && !groupMemberRepository.existsByGroupAndUser(group, user)) {
                 throw new RuntimeException("Cannot split with non-member: " + user.getName());
             }
 
@@ -161,15 +173,10 @@ public class GroupExpenseService {
     }
 
     private void handlePercentageSplit(
-            GroupExpense expense, Group group, List<SplitDetail> splits) {
+            GroupExpense expense, Group group, User otherUser, List<SplitDetail> splits) {
 
         if (splits == null || splits.isEmpty()) {
             throw new RuntimeException("Split details required");
-        }
-
-        List<GroupMember> members = groupMemberRepository.findByGroup(group);
-        if (splits.size() != members.size()) {
-            throw new RuntimeException("All group members must be included");
         }
 
         BigDecimal totalPercentage = BigDecimal.ZERO;
@@ -194,7 +201,7 @@ public class GroupExpenseService {
             User user = userRepository.findById(detail.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (!groupMemberRepository.existsByGroupAndUser(group, user)) {
+            if (group != null && !groupMemberRepository.existsByGroupAndUser(group, user)) {
                 throw new RuntimeException("Cannot split with non-member: " + user.getName());
             }
 
@@ -212,7 +219,7 @@ public class GroupExpenseService {
         }
 
         BigDecimal difference = totalAmount.subtract(calculatedTotal);
-        if (difference.compareTo(BigDecimal.ZERO) != 0) {
+        if (difference.compareTo(BigDecimal.ZERO) != 0 && !splitEntities.isEmpty()) {
             splitEntities.get(0).setAmountOwed(
                     splitEntities.get(0).getAmountOwed().add(difference));
         }

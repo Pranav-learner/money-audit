@@ -26,4 +26,5 @@ public class ReceiptUploadResponse {
     private String rawText;
     private UUID linkedExpenseId;
     private UUID linkedGroupExpenseId;
+    private String receiptUrl;
 }

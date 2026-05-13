@@ -12,4 +12,5 @@ public interface ReceiptRepository extends JpaRepository<Receipt, UUID> {
     List<Receipt> findByUserOrderByCreatedAtDesc(User user);
     Optional<Receipt> findByIdAndUser(UUID id, User user);
     List<Receipt> findByGroupIdOrderByCreatedAtDesc(UUID groupId);
+    Optional<Receipt> findByLinkedGroupExpenseId(UUID groupExpenseId);
 }

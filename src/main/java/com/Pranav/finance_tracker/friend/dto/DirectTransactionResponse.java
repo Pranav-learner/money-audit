@@ -20,4 +20,5 @@ public class DirectTransactionResponse {
     private String type; // "EXPENSE" or "PAYMENT"
     private String friendName;       // name of the other participant
     private UUID friendId;           // id of the other participant
+    private String receiptUrl;       // Cloudinary URL of the receipt if attached
 }

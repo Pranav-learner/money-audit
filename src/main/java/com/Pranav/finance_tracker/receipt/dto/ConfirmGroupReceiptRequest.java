@@ -28,8 +28,8 @@ public class ConfirmGroupReceiptRequest {
     @NotNull
     private UUID categoryId;
 
-    @NotNull
-    private UUID groupId;
+    private UUID groupId;     // For group splits
+    private UUID otherUserId; // For direct (1-to-1) splits
 
     @NotNull
     private SplitType splitType;

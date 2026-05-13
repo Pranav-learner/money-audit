@@ -22,6 +22,8 @@ import com.Pranav.finance_tracker.receipt.repository.ReceiptRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +55,7 @@ public class ReceiptService {
     private final GroupRepository groupRepository;
     private final GroupExpenseService groupExpenseService;
     private final SecurityUtils securityUtils;
+    private final Cloudinary cloudinary;
 
     @Value("${ocr.upload-dir}")
     private String uploadDir;
@@ -81,10 +84,20 @@ public class ReceiptService {
         }
 
         File saved = persistToDisk(file);
+        
+        String cloudinaryUrl = saved.getAbsolutePath(); // Fallback
+        try {
+            Map uploadResult = cloudinary.uploader().upload(saved, ObjectUtils.emptyMap());
+            cloudinaryUrl = uploadResult.get("secure_url").toString();
+        } catch (IOException e) {
+            log.error("Failed to upload receipt to Cloudinary", e);
+            // Optionally, we can proceed with local path or fail.
+        }
+
         Receipt receipt = Receipt.builder()
                 .user(user)
                 .group(group)
-                .storagePath(saved.getAbsolutePath())
+                .storagePath(cloudinaryUrl)
                 .originalFilename(file.getOriginalFilename())
                 .contentType(contentType)
                 .status(ReceiptStatus.UPLOADED)
@@ -173,6 +186,7 @@ public class ReceiptService {
         groupReq.setExpenseDate(request.getExpenseDate() != null ? request.getExpenseDate() : LocalDate.now());
         groupReq.setSplitType(request.getSplitType());
         groupReq.setSplits(request.getSplits());
+        groupReq.setOtherUserId(request.getOtherUserId());
 
         GroupExpense groupExpense = groupExpenseService.createGroupExpense(groupReq);
 
@@ -243,6 +257,7 @@ public class ReceiptService {
                 .rawText(parsed.getRawText())
                 .linkedExpenseId(receipt.getLinkedExpense() != null ? receipt.getLinkedExpense().getId() : null)
                 .linkedGroupExpenseId(receipt.getLinkedGroupExpense() != null ? receipt.getLinkedGroupExpense().getId() : null)
+                .receiptUrl(receipt.getStoragePath())
                 .build();
     }
 }
