@@ -19,11 +19,11 @@ import java.util.regex.Pattern;
 public class ReceiptParserService {
 
     private static final Pattern AMOUNT_LABELED = Pattern.compile(
-            "(?i)(grand\\s*total|total\\s*amount|amount\\s*payable|amount\\s*due|net\\s*payable|net\\s*amount|payable|total)\\s*[:\\-]?\\s*(?:rs\\.?|inr|₹|\\$)?\\s*([0-9]+(?:[.,][0-9]{1,2})?)",
+            "(?i)(grand\\s*total|total\\s*amount|amount\\s*payable|amount\\s*due|net\\s*payable|net\\s*amount|payable|total)\\s*[:\\-]?\\s*(?:rs\\.?|inr|₹|\\$|chf|eur|usd|gbp|\\w{3})?\\s*([0-9]+(?:[.,][0-9]{1,2})?)",
             Pattern.MULTILINE);
 
     private static final Pattern AMOUNT_BARE = Pattern.compile(
-            "(?:rs\\.?|inr|₹|\\$)\\s*([0-9]+(?:[.,][0-9]{1,2})?)",
+            "(?:rs\\.?|inr|₹|\\$|chf|eur|usd|gbp)\\s*([0-9]+(?:[.,][0-9]{1,2})?)",
             Pattern.CASE_INSENSITIVE);
 
     private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
@@ -48,6 +48,8 @@ public class ReceiptParserService {
         if (rawText == null || rawText.isBlank()) {
             return ReceiptParseResult.builder().rawText(rawText).build();
         }
+        
+        log.info("--- RAW RECEIPT TEXT START ---\n{}\n--- RAW RECEIPT TEXT END ---", rawText);
 
         return ReceiptParseResult.builder()
                 .merchant(extractMerchant(rawText))
@@ -70,6 +72,8 @@ public class ReceiptParserService {
 
     private BigDecimal extractAmount(String text) {
         BigDecimal best = null;
+
+        // 1. Labeled Total (Total: CHF 54.50)
         Matcher labeled = AMOUNT_LABELED.matcher(text);
         while (labeled.find()) {
             BigDecimal candidate = toAmount(labeled.group(2));
@@ -79,13 +83,32 @@ public class ReceiptParserService {
         }
         if (best != null) return best;
 
-        Matcher bare = AMOUNT_BARE.matcher(text);
-        while (bare.find()) {
-            BigDecimal candidate = toAmount(bare.group(1));
+        // 2. Amount with Currency (CHF 54.50 or 54.50 CHF)
+        Pattern currencyPattern = Pattern.compile(
+                "(?i)(?:rs\\.?|inr|₹|\\$|chf|eur|usd|gbp)\\s*([0-9]+(?:[.,][0-9]{1,2})?)|([0-9]+(?:[.,][0-9]{1,2})?)\\s*(?:rs\\.?|inr|₹|\\$|chf|eur|usd|gbp)");
+        Matcher currencyMatcher = currencyPattern.matcher(text);
+        while (currencyMatcher.find()) {
+            String val = currencyMatcher.group(1) != null ? currencyMatcher.group(1) : currencyMatcher.group(2);
+            BigDecimal candidate = toAmount(val);
             if (candidate != null && (best == null || candidate.compareTo(best) > 0)) {
                 best = candidate;
             }
         }
+        if (best != null) return best;
+
+        // 3. Fallback: Largest number found that looks like an amount
+        Pattern genericPattern = Pattern.compile("([0-9]+(?:[.,][0-9]{1,2}))");
+        Matcher genericMatcher = genericPattern.matcher(text);
+        while (genericMatcher.find()) {
+            BigDecimal candidate = toAmount(genericMatcher.group(1));
+            // Exclude dates (roughly) and very large numbers
+            if (candidate != null && candidate.compareTo(BigDecimal.valueOf(1000000)) < 0) {
+                if (best == null || candidate.compareTo(best) > 0) {
+                    best = candidate;
+                }
+            }
+        }
+
         return best;
     }
 

@@ -61,9 +61,15 @@ public class AnalyticsService {
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
 
         return budgets.stream().map(budget -> {
-            BigDecimal spent = expenseRepository.sumByUserAndCategoryAndExpenseDateBetween(
+            BigDecimal individualSpent = expenseRepository.sumByUserAndCategoryAndExpenseDateBetween(
                     user, budget.getCategory(), start, end);
-            return calculateUsage(budget, spent);
+            BigDecimal splitSpent = splitRepository.sumByUserAndCategoryAndDateBetween(
+                    user, budget.getCategory(), start, end);
+            
+            BigDecimal totalSpent = (individualSpent != null ? individualSpent : BigDecimal.ZERO)
+                    .add(splitSpent != null ? splitSpent : BigDecimal.ZERO);
+            
+            return calculateUsage(budget, totalSpent);
         }).collect(Collectors.toList());
     }
 
@@ -97,7 +103,11 @@ public class AnalyticsService {
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
 
         BigDecimal totalSavings = savingRepository.sumByUserAndMonthAndYear(user, month, year);
-        BigDecimal totalSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
+        BigDecimal individualSpent = expenseRepository.sumByUserAndExpenseDateBetween(user, start, end);
+        BigDecimal splitSpent = splitRepository.sumByUserAndDateBetween(user, start, end);
+        
+        BigDecimal totalSpent = (individualSpent != null ? individualSpent : BigDecimal.ZERO)
+                .add(splitSpent != null ? splitSpent : BigDecimal.ZERO);
         List<CategoryDistributionResponse> distribution = getCategoryDistribution(user, month, year, "MONTH");
 
         String topCategory = (distribution != null && !distribution.isEmpty())
@@ -125,29 +135,41 @@ public class AnalyticsService {
             start = LocalDate.of(year, month, 1);
         }
 
-        List<CategoryDistributionResponse> list = expenseRepository.getCategoryDistribution(user, start, end);
-        String[] colors = { "#6366f1", "#2dd4a8", "#fbbf24", "#f87171", "#a78bfa", "#f472b6" };
+        List<com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse> individual = expenseRepository.getCategoryDistribution(user, start, end);
+        List<com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse> splits = splitRepository.getCategoryDistribution(user, start, end);
+        
+        Map<String, BigDecimal> mergedMap = individual.stream()
+                .collect(Collectors.toMap(com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse::getName, 
+                        com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse::getValue, 
+                        BigDecimal::add));
+        
+        for (com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse s : splits) {
+            mergedMap.merge(s.getName(), s.getValue(), BigDecimal::add);
+        }
+        
+        List<com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse> list = mergedMap.entrySet().stream()
+                .map(e -> new com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse(e.getKey(), e.getValue()))
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .collect(Collectors.toList());
 
+        String[] colors = { "#6366f1", "#2dd4a8", "#fbbf24", "#f87171", "#a78bfa", "#f472b6" };
+ 
         for (int i = 0; i < list.size(); i++) {
             list.get(i).setColor(colors[i % colors.length]);
         }
         return list;
     }
 
-    public List<Map<String, Object>> getSpendingTrend(User user, int year) {
+    public List<SavingTrendItem> getSpendingTrend(User user, int year) {
         List<Object[]> raw = expenseRepository.getMonthlySpendingTrend(user, year);
         Map<Integer, BigDecimal> monthlySums = raw.stream()
                 .collect(Collectors.toMap(
                         obj -> ((Number) obj[0]).intValue(),
                         obj -> (BigDecimal) obj[1]));
 
-        String[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-        List<Map<String, Object>> trend = new ArrayList<>();
-
+        List<SavingTrendItem> trend = new ArrayList<>();
         for (int i = 1; i <= 12; i++) {
-            trend.add(Map.of(
-                    "month", months[i - 1],
-                    "amount", monthlySums.getOrDefault(i, BigDecimal.ZERO)));
+            trend.add(new SavingTrendItem(i, monthlySums.getOrDefault(i, BigDecimal.ZERO)));
         }
         return trend;
     }
@@ -224,7 +246,7 @@ public class AnalyticsService {
                 .toList();
 
         List<CategoryDistributionResponse> distribution = getCategoryDistribution(user, month, year, "MONTH");
-        List<Map<String, Object>> trend = getSpendingTrend(user, year);
+        List<SavingTrendItem> trend = getSpendingTrend(user, year);
 
         BalanceOverviewResponse balance = getBalanceOverview(user);
         List<WeeklyTrendItem> weeklyTrend = getWeeklyTrend(user);

@@ -47,6 +47,10 @@ public class GroupExpense {
     @JoinColumn(name = "other_user_id")
     private User otherUser;  // only for direct expenses — the non-payer participant
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private com.Pranav.finance_tracker.category.entity.Category category;
+
     private LocalDateTime createdAt;
 
     @Column(nullable = false)

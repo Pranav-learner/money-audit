@@ -25,5 +25,6 @@ public class CreateGroupExpenseRequest {
     private SplitType splitType;
 
     private List<SplitDetail> splits;
+    private UUID categoryId;
 
 }

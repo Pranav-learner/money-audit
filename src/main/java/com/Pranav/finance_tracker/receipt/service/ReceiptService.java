@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -172,10 +173,14 @@ public class ReceiptService {
             throw new BadRequestException("Receipt already linked to an expense");
         }
 
-        // Validate group exists and belongs to receipt or request
+        // Validate group exists if provided
         UUID groupId = request.getGroupId();
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
+        if (groupId != null) {
+            groupRepository.findById(groupId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
+        } else if (request.getOtherUserId() == null) {
+            throw new BadRequestException("Either groupId or otherUserId must be provided");
+        }
 
         // Create GroupExpense via GroupExpenseService
         CreateGroupExpenseRequest groupReq = new CreateGroupExpenseRequest();
@@ -187,6 +192,7 @@ public class ReceiptService {
         groupReq.setSplitType(request.getSplitType());
         groupReq.setSplits(request.getSplits());
         groupReq.setOtherUserId(request.getOtherUserId());
+        groupReq.setCategoryId(request.getCategoryId());
 
         GroupExpense groupExpense = groupExpenseService.createGroupExpense(groupReq);
 
@@ -234,8 +240,12 @@ public class ReceiptService {
                     (file.getOriginalFilename() != null
                             ? file.getOriginalFilename().replaceAll("[^A-Za-z0-9._-]", "_")
                             : "upload");
-            Path destination = Paths.get(uploadDir, safeName);
-            file.transferTo(destination.toFile());
+            
+            // Resolve absolute path to avoid Tomcat temp dir issues
+            Path destination = Paths.get(uploadDir).toAbsolutePath().resolve(safeName);
+            Files.createDirectories(destination.getParent());
+
+            Files.copy(file.getInputStream(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             return destination.toFile();
         } catch (IOException e) {
             log.error("Failed to persist uploaded receipt: {}", e.getMessage());

@@ -49,4 +49,31 @@ public interface GroupExpenseSplitRepository extends JpaRepository<GroupExpenseS
                         "AND ((s.expense.paidBy.id = :u1 AND s.expense.otherUser.id = :u2) " +
                         "OR (s.expense.paidBy.id = :u2 AND s.expense.otherUser.id = :u1))")
         void markDirectSplitsSettled(@Param("u1") UUID u1, @Param("u2") UUID u2);
+
+        @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+                        "WHERE s.user = :user AND s.expense.category = :category " +
+                        "AND s.expense.expenseDate BETWEEN :start AND :end")
+        BigDecimal sumByUserAndCategoryAndDateBetween(
+                        @Param("user") User user,
+                        @Param("category") com.Pranav.finance_tracker.category.entity.Category category,
+                        @Param("start") java.time.LocalDate start,
+                        @Param("end") java.time.LocalDate end);
+
+        @Query("SELECT COALESCE(SUM(s.amountOwed), 0) FROM GroupExpenseSplit s " +
+                        "WHERE s.user = :user " +
+                        "AND s.expense.expenseDate BETWEEN :start AND :end")
+        BigDecimal sumByUserAndDateBetween(
+                        @Param("user") User user,
+                        @Param("start") java.time.LocalDate start,
+                        @Param("end") java.time.LocalDate end);
+
+        @Query("SELECT new com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse(s.expense.category.name, SUM(s.amountOwed)) " +
+                        "FROM GroupExpenseSplit s WHERE s.user = :user " +
+                        "AND s.expense.category IS NOT NULL " +
+                        "AND s.expense.expenseDate BETWEEN :start AND :end " +
+                        "GROUP BY s.expense.category.name")
+        List<com.Pranav.finance_tracker.expense.dto.CategoryDistributionResponse> getCategoryDistribution(
+                        @Param("user") User user,
+                        @Param("start") java.time.LocalDate start,
+                        @Param("end") java.time.LocalDate end);
 }

@@ -39,6 +39,7 @@ public class GroupExpenseService {
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final EmailService emailService;
+    private final com.Pranav.finance_tracker.category.repository.CategoryRepository categoryRepository;
 
     @Transactional
     public GroupExpense createGroupExpense(CreateGroupExpenseRequest request ){
@@ -95,6 +96,11 @@ public class GroupExpenseService {
     private GroupExpense createExpense(
             CreateGroupExpenseRequest request, Group group, User otherUser, User currentUser) {
 
+        com.Pranav.finance_tracker.category.entity.Category category = null;
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId()).orElse(null);
+        }
+
         GroupExpense expense = GroupExpense.builder()
                 .title(request.getTitle())
                 .totalAmount(request.getTotalAmount())
@@ -102,6 +108,7 @@ public class GroupExpenseService {
                 .paidBy(currentUser)
                 .group(group)
                 .otherUser(otherUser)
+                .category(category)
                 .splitType(request.getSplitType())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -259,9 +266,9 @@ public class GroupExpenseService {
         groupExpenseRepository.save(expense);
 
         switch (request.getSplitType()) {
-            case EQUAL -> handleEqualSplit(expense, group);
-            case UNEQUAL -> handleUnequalSplit(expense, group, request.getSplits());
-            case PERCENTAGE -> handlePercentageSplit(expense, group, request.getSplits());
+            case EQUAL -> handleEqualSplit(expense, group, null, currentUser);
+            case UNEQUAL -> handleUnequalSplit(expense, group, null, request.getSplits());
+            case PERCENTAGE -> handlePercentageSplit(expense, group, null, request.getSplits());
         }
     }
 

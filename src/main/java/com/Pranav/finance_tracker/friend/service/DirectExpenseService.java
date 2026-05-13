@@ -28,6 +28,7 @@ public class DirectExpenseService {
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final EmailService emailService;
+    private final com.Pranav.finance_tracker.category.repository.CategoryRepository categoryRepository;
 
     @Transactional
     public String createExpense(CreateDirectExpenseRequest request) {
@@ -60,6 +61,11 @@ public class DirectExpenseService {
             nonPayer = currentUser;
         }
 
+        com.Pranav.finance_tracker.category.entity.Category category = null;
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId()).orElse(null);
+        }
+
         // Create expense with group = null (direct)
         GroupExpense expense = GroupExpense.builder()
                 .title(request.getTitle())
@@ -67,6 +73,7 @@ public class DirectExpenseService {
                 .expenseDate(request.getExpenseDate())
                 .paidBy(payer)
                 .otherUser(nonPayer)
+                .category(category)
                 .splitType(request.getSplitType())
                 .group(null) // key: null = direct expense
                 .createdAt(LocalDateTime.now())

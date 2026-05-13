@@ -34,4 +34,5 @@ public class CreateDirectExpenseRequest {
     private BigDecimal otherShare;     // for UNEQUAL split
     private BigDecimal myPercentage;   // for PERCENTAGE split
     private BigDecimal otherPercentage; // for PERCENTAGE split
+    private java.util.UUID categoryId;
 }

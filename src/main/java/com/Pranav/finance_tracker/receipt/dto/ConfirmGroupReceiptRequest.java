@@ -25,7 +25,6 @@ public class ConfirmGroupReceiptRequest {
 
     private String description;
 
-    @NotNull
     private UUID categoryId;
 
     private UUID groupId;     // For group splits
