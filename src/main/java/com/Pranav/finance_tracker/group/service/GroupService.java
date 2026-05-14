@@ -9,6 +9,7 @@ import com.Pranav.finance_tracker.group.repository.GroupRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
 import com.Pranav.finance_tracker.group.service.GroupBalanceService;
+import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
     private final GroupBalanceService groupBalanceService;
+    private final GroupExpenseRepository groupExpenseRepository;
 
     public GroupResponse createGroup(CreateGroupRequest request, User currentUser){
 
@@ -49,6 +51,7 @@ public class GroupService {
                 .name(group.getName())
                 .createdBy(currentUser.getName())
                 .createdAt(group.getCreatedAt())
+                .totalExpenses(java.math.BigDecimal.ZERO)
                 .build();
     }
 
@@ -125,9 +128,17 @@ public class GroupService {
                             .name(g.getName())
                             .createdBy(g.getCreatedBy().getName())
                             .createdAt(g.getCreatedAt())
+                            .totalExpenses(calculateTotalExpenses(g.getId()))
                             .build();
                 })
                 .toList();
+    }
+
+    private java.math.BigDecimal calculateTotalExpenses(UUID groupId) {
+        return groupExpenseRepository.findByGroupId(groupId).stream()
+                .filter(com.Pranav.finance_tracker.group.entity.GroupExpense::isActive)
+                .map(com.Pranav.finance_tracker.group.entity.GroupExpense::getTotalAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
     public GroupResponse getGroupById(UUID groupId) {
@@ -138,6 +149,7 @@ public class GroupService {
                 .name(group.getName())
                 .createdBy(group.getCreatedBy().getName())
                 .createdAt(group.getCreatedAt())
+                .totalExpenses(calculateTotalExpenses(groupId))
                 .build();
     }
 

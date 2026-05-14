@@ -9,5 +9,6 @@ import java.util.UUID;
 @Setter
 public class AddMemberRequest {
     private UUID userId;
+    private String identifier;
 }
 

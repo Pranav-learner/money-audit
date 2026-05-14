@@ -26,5 +26,7 @@ public class CreateGroupExpenseRequest {
 
     private List<SplitDetail> splits;
     private UUID categoryId;
+    private UUID paidById;
+    private String receiptUrl;
 
 }

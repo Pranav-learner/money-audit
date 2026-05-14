@@ -16,5 +16,6 @@ public class GroupResponse {
     private String name;
     private String createdBy;
     private LocalDateTime createdAt;
+    private java.math.BigDecimal totalExpenses;
 }
 

@@ -3,6 +3,7 @@ package com.Pranav.finance_tracker.group.controller;
 import com.Pranav.finance_tracker.group.dto.AddMemberRequest;
 import com.Pranav.finance_tracker.group.dto.CreateGroupRequest;
 import com.Pranav.finance_tracker.group.dto.GroupResponse;
+import com.Pranav.finance_tracker.group.service.GroupInvitationService;
 import com.Pranav.finance_tracker.group.service.GroupService;
 import com.Pranav.finance_tracker.payment.service.GroupPaymentService;
 import com.Pranav.finance_tracker.user.entity.User;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class GroupController {
 
     private final GroupService groupService;
+    private final GroupInvitationService invitationService;
     private final GroupPaymentService groupPaymentService;
     private final com.Pranav.finance_tracker.auth.security.SecurityUtils securityUtils;
 
@@ -40,7 +42,12 @@ public class GroupController {
     public ResponseEntity<Void> addMember(
             @PathVariable UUID groupId,
             @Valid @RequestBody AddMemberRequest request) {
-        groupService.addMember(groupId, request.getUserId());
+        User currentUser = securityUtils.getCurrentUser();
+        if (request.getUserId() != null) {
+            invitationService.inviteUserById(groupId, request.getUserId(), currentUser);
+        } else if (request.getIdentifier() != null) {
+            invitationService.inviteUser(groupId, request.getIdentifier(), currentUser);
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -84,5 +91,33 @@ public class GroupController {
         request.setGroupId(groupId);
         String msg = groupPaymentService.createPayment(request);
         return ResponseEntity.ok(msg);
+    }
+
+    @GetMapping("/invitations")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getMyInvitations() {
+        User user = securityUtils.getCurrentUser();
+        return ResponseEntity.ok(invitationService.getMyInvitations(user).stream()
+                .map(i -> java.util.Map.of(
+                        "id", (Object) i.getId(),
+                        "groupId", (Object) i.getGroup().getId(),
+                        "groupName", (Object) i.getGroup().getName(),
+                        "invitedBy", (Object) i.getInvitedBy().getName(),
+                        "date", (Object) i.getCreatedAt().toString()
+                ))
+                .toList());
+    }
+
+    @PostMapping("/invitations/{invitationId}/accept")
+    public ResponseEntity<Void> acceptInvitation(@PathVariable UUID invitationId) {
+        User user = securityUtils.getCurrentUser();
+        invitationService.acceptInvitation(invitationId, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/invitations/{invitationId}/reject")
+    public ResponseEntity<Void> rejectInvitation(@PathVariable UUID invitationId) {
+        User user = securityUtils.getCurrentUser();
+        invitationService.rejectInvitation(invitationId, user);
+        return ResponseEntity.ok().build();
     }
 }

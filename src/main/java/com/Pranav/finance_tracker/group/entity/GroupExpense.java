@@ -60,5 +60,7 @@ public class GroupExpense {
     private boolean isActive = true;
 
     private LocalDateTime settledAt;
+    
+    private String receiptUrl;
 }
 

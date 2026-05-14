@@ -17,6 +17,8 @@ public interface GroupExpenseRepository extends JpaRepository<GroupExpense, UUID
 
         List<GroupExpense> findByGroupId(UUID groupId);
 
+        List<GroupExpense> findTop10ByGroupIdOrderByCreatedAtDesc(UUID groupId);
+
         // ── Active direct expense queries (isSettled = false) ──
 
         @Query("SELECT e FROM GroupExpense e WHERE e.group IS NULL AND e.isActive = true " +

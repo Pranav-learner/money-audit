@@ -44,6 +44,12 @@ public class GroupExpenseService {
     @Transactional
     public GroupExpense createGroupExpense(CreateGroupExpenseRequest request ){
         User currenntUser = securityUtils.getCurrentUser();
+        User payer = currenntUser;
+        
+        if (request.getPaidById() != null) {
+            payer = userRepository.findById(request.getPaidById())
+                    .orElseThrow(() -> new RuntimeException("Payer not found"));
+        }
         Group group = null;
         User otherUser = null;
 
@@ -62,14 +68,14 @@ public class GroupExpenseService {
             throw new RuntimeException("Total amount must be positive");
         }
 
-        GroupExpense expense = createExpense(request, group, otherUser, currenntUser);
+        GroupExpense expense = createExpense(request, group, otherUser, payer);
         
         if (group == null && otherUser != null) {
             groupExpenseRepository.deactivateDirectExpensesBeyondLimit(currenntUser.getId(), otherUser.getId());
         }
 
         switch (request.getSplitType()) {
-            case EQUAL -> handleEqualSplit(expense, group, otherUser, currenntUser);
+            case EQUAL -> handleEqualSplit(expense, group, otherUser, payer);
             case UNEQUAL -> handleUnequalSplit(expense, group, otherUser, request.getSplits());
             case PERCENTAGE -> handlePercentageSplit(expense, group, otherUser, request.getSplits());
         }
@@ -114,6 +120,7 @@ public class GroupExpenseService {
                 .otherUser(otherUser)
                 .category(category)
                 .splitType(request.getSplitType())
+                .receiptUrl(request.getReceiptUrl())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -300,15 +307,29 @@ public class GroupExpenseService {
     }
 
     public List<java.util.Map<String, Object>> getGroupExpenses(UUID groupId) {
-        return groupExpenseRepository.findByGroupId(groupId).stream()
-                .map(e -> java.util.Map.of(
-                        "id", (Object) e.getId(),
-                        "title", (Object) e.getTitle(),
-                        "amount", (Object) e.getTotalAmount(),
-                        "paidBy", (Object) e.getPaidBy().getName(),
-                        "date", (Object) e.getExpenseDate().toString(),
-                        "splitType", (Object) e.getSplitType().name()
-                ))
+        return groupExpenseRepository.findTop10ByGroupIdOrderByCreatedAtDesc(groupId).stream()
+                .map(e -> {
+                    List<GroupExpenseSplit> splits = groupExpenseSplitRepository.findByExpense(e);
+                    List<java.util.Map<String, Object>> splitDetails = splits.stream()
+                            .map(s -> java.util.Map.of(
+                                    "userId", (Object) s.getUser().getId(),
+                                    "userName", (Object) s.getUser().getName(),
+                                    "amountOwed", (Object) s.getAmountOwed()
+                            ))
+                            .toList();
+
+                    return java.util.Map.of(
+                            "id", (Object) e.getId(),
+                            "title", (Object) e.getTitle(),
+                            "amount", (Object) e.getTotalAmount(),
+                            "paidBy", (Object) e.getPaidBy().getName(),
+                            "paidById", (Object) e.getPaidBy().getId(),
+                            "date", (Object) e.getExpenseDate().toString(),
+                            "splitType", (Object) e.getSplitType().name(),
+                            "receiptUrl", (Object) (e.getReceiptUrl() != null ? e.getReceiptUrl() : ""),
+                            "splits", (Object) splitDetails
+                    );
+                })
                 .toList();
     }
 }

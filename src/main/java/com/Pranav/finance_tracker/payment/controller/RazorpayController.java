@@ -10,6 +10,7 @@ import com.Pranav.finance_tracker.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,15 @@ public class RazorpayController {
     private final DirectPaymentService directPaymentService;
     private final SecurityUtils securityUtils;
     private final UserRepository userRepository;
+    
+    @Value("${razorpay.key-id}")
+    private String keyId;
+
+    @GetMapping("/key")
+    @Operation(summary = "Get Razorpay public key ID")
+    public ResponseEntity<Map<String, String>> getKey() {
+        return ResponseEntity.ok(Map.of("keyId", keyId));
+    }
 
     @PostMapping("/create-order")
     @Operation(summary = "Create a Razorpay order")
