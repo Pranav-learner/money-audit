@@ -1,9 +1,11 @@
 package com.Pranav.finance_tracker.financialintelligence.notification;
 
+import com.Pranav.finance_tracker.financialintelligence.rules.MoneyFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,8 +22,10 @@ public class InsightNotificationService {
 
     static final String TYPE_FINANCIAL_INSIGHT = "FINANCIAL_INSIGHT";
     static final String TYPE_FINANCIAL_RISK = "FINANCIAL_RISK";
+    static final String TYPE_RECOMMENDATION = "FINANCIAL_RECOMMENDATION";
     private static final String TITLE = "Your financial analysis is ready";
     private static final String RISK_TITLE = "Financial Risk Detected";
+    private static final String RECOMMENDATION_TITLE = "New ways to save";
 
     private final InAppNotificationRepository notificationRepository;
 
@@ -70,6 +74,34 @@ public class InsightNotificationService {
 
         notificationRepository.save(notification);
         log.debug("Persisted financial-risk notification for user {} ({} high-severity risks)", userId, highRiskCount);
+    }
+
+    /**
+     * Persists an in-app notification when high-priority recommendations are generated, quantifying
+     * the opportunity. Never sends email.
+     *
+     * @param userId             owner of the notification
+     * @param opportunityCount   number of new recommendations (must be &gt; 0 to be meaningful)
+     * @param totalMonthlySaving combined estimated monthly saving across those recommendations
+     */
+    public void notifyRecommendations(UUID userId, int opportunityCount, BigDecimal totalMonthlySaving) {
+        String noun = opportunityCount == 1 ? "opportunity" : "opportunities";
+        BigDecimal saving = totalMonthlySaving == null ? BigDecimal.ZERO : totalMonthlySaving;
+        String body = String.format("We found %d %s that could save you %s every month.",
+                opportunityCount, noun, MoneyFormatter.rupees(saving));
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(userId)
+                .title(RECOMMENDATION_TITLE)
+                .body(body)
+                .type(TYPE_RECOMMENDATION)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
+        log.debug("Persisted recommendation notification for user {} ({} opportunities, {}/mo)",
+                userId, opportunityCount, MoneyFormatter.rupees(saving));
     }
 
     private String buildBody(int count) {
