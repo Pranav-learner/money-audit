@@ -2,6 +2,7 @@ package com.Pranav.finance_tracker.financialintelligence.dto;
 
 import com.Pranav.finance_tracker.financialintelligence.entity.InsightType;
 import com.Pranav.finance_tracker.financialintelligence.entity.Severity;
+import com.Pranav.finance_tracker.financialintelligence.risk.FinancialRiskType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,10 @@ public class FinancialInsightResponse {
     private String description;
     private InsightType insightType;
     private Severity severity;
+
+    /** Risk classification (Module 2), or {@code null} for a non-risk insight. */
+    private FinancialRiskType riskType;
+
     private String category;
     private String actionSuggestion;
     private double confidence;

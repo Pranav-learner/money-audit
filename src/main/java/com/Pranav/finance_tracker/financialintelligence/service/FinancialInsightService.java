@@ -9,6 +9,7 @@ import com.Pranav.finance_tracker.financialintelligence.entity.Severity;
 import com.Pranav.finance_tracker.financialintelligence.mapper.InsightMapper;
 import com.Pranav.finance_tracker.financialintelligence.notification.InsightNotificationService;
 import com.Pranav.finance_tracker.financialintelligence.repository.FinancialInsightRepository;
+import com.Pranav.finance_tracker.financialintelligence.risk.service.RiskDetectionEngine;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightEngine;
@@ -44,6 +45,7 @@ public class FinancialInsightService {
     private final FinancialInsightRepository insightRepository;
     private final InsightContextFactory contextFactory;
     private final InsightEngine insightEngine;
+    private final RiskDetectionEngine riskDetectionEngine;
     private final InsightMapper insightMapper;
     private final InsightNotificationService notificationService;
 
@@ -58,7 +60,12 @@ public class FinancialInsightService {
     @Transactional
     public int generateForUser(User user) {
         InsightContext context = contextFactory.build(user);
-        List<InsightDraft> drafts = insightEngine.run(context);
+
+        // Execution flow: Spending Intelligence → Risk Detection → persist → notify.
+        // Both phases share the one preloaded context, so risk detection adds no extra scans.
+        List<InsightDraft> drafts = new ArrayList<>();
+        drafts.addAll(insightEngine.run(context));
+        drafts.addAll(riskDetectionEngine.run(context));
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime dayStart = now.toLocalDate().atStartOfDay();
@@ -86,6 +93,15 @@ public class FinancialInsightService {
 
         insightRepository.saveAll(toSave);
         notificationService.notifyInsightsReady(user.getId(), toSave.size());
+
+        // Escalate: if any newly-generated HIGH-severity risks exist, raise a dedicated risk alert.
+        long highSeverityRisks = toSave.stream()
+                .filter(i -> i.getRiskType() != null)
+                .filter(i -> i.getSeverity() == Severity.HIGH)
+                .count();
+        if (highSeverityRisks > 0) {
+            notificationService.notifyRisksDetected(user.getId(), (int) highSeverityRisks);
+        }
         return toSave.size();
     }
 

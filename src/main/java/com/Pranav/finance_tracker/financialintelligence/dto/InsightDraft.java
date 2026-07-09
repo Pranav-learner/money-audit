@@ -2,6 +2,7 @@ package com.Pranav.finance_tracker.financialintelligence.dto;
 
 import com.Pranav.finance_tracker.financialintelligence.entity.InsightType;
 import com.Pranav.finance_tracker.financialintelligence.entity.Severity;
+import com.Pranav.finance_tracker.financialintelligence.risk.FinancialRiskType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -26,6 +27,12 @@ public class InsightDraft {
     private final String description;
     private final InsightType insightType;
     private final Severity severity;
+
+    /**
+     * Risk classification when this draft was produced by the Risk Detection Engine (Module 2),
+     * or {@code null} for a plain spending-intelligence insight (Module 1).
+     */
+    private final FinancialRiskType riskType;
 
     /** Optional business category the insight relates to. */
     private final String category;

@@ -9,6 +9,8 @@ import com.Pranav.finance_tracker.financialintelligence.entity.Severity;
 import com.Pranav.finance_tracker.financialintelligence.mapper.InsightMapper;
 import com.Pranav.finance_tracker.financialintelligence.notification.InsightNotificationService;
 import com.Pranav.finance_tracker.financialintelligence.repository.FinancialInsightRepository;
+import com.Pranav.finance_tracker.financialintelligence.risk.FinancialRiskType;
+import com.Pranav.finance_tracker.financialintelligence.risk.service.RiskDetectionEngine;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightEngine;
 import com.Pranav.finance_tracker.user.entity.User;
@@ -41,6 +43,7 @@ class FinancialInsightServiceTest {
     @Mock private FinancialInsightRepository insightRepository;
     @Mock private InsightContextFactory contextFactory;
     @Mock private InsightEngine insightEngine;
+    @Mock private RiskDetectionEngine riskDetectionEngine;
     @Mock private InsightNotificationService notificationService;
     @Spy private InsightMapper insightMapper = new InsightMapper();
 
@@ -67,6 +70,7 @@ class FinancialInsightServiceTest {
     @Test
     void generatesPersistsAndNotifiesForNewInsights() {
         when(insightEngine.run(any())).thenReturn(List.of(draft("A"), draft("B")));
+        when(riskDetectionEngine.run(any())).thenReturn(List.of());
         when(insightRepository.existsByUserIdAndRuleKeyAndCreatedAtBetween(any(), any(), any(), any()))
                 .thenReturn(false);
 
@@ -81,8 +85,32 @@ class FinancialInsightServiceTest {
     }
 
     @Test
+    void raisesRiskNotificationWhenHighSeverityRiskIsGenerated() {
+        InsightDraft highRisk = InsightDraft.builder()
+                .ruleKey("BUDGET_RISK")
+                .title("Budget at risk")
+                .description("desc")
+                .insightType(InsightType.BUDGET_ALERT)
+                .severity(Severity.HIGH)
+                .riskType(FinancialRiskType.BUDGET_RISK)
+                .confidence(0.95)
+                .build();
+        when(insightEngine.run(any())).thenReturn(List.of());
+        when(riskDetectionEngine.run(any())).thenReturn(List.of(highRisk));
+        when(insightRepository.existsByUserIdAndRuleKeyAndCreatedAtBetween(any(), any(), any(), any()))
+                .thenReturn(false);
+
+        int created = service.generateForUser(user);
+
+        assertThat(created).isEqualTo(1);
+        verify(notificationService).notifyInsightsReady(eq(user.getId()), eq(1));
+        verify(notificationService).notifyRisksDetected(eq(user.getId()), eq(1));
+    }
+
+    @Test
     void skipsDraftsAlreadyGeneratedToday() {
         when(insightEngine.run(any())).thenReturn(List.of(draft("A"), draft("B")));
+        when(riskDetectionEngine.run(any())).thenReturn(List.of());
         // "A" already exists today, "B" is new.
         when(insightRepository.existsByUserIdAndRuleKeyAndCreatedAtBetween(any(), eq("A"), any(), any()))
                 .thenReturn(true);
@@ -98,6 +126,7 @@ class FinancialInsightServiceTest {
     @Test
     void noNotificationWhenNothingNewIsGenerated() {
         when(insightEngine.run(any())).thenReturn(List.of());
+        when(riskDetectionEngine.run(any())).thenReturn(List.of());
 
         int created = service.generateForUser(user);
 

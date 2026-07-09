@@ -79,3 +79,23 @@ ocr:
     datapath: /usr/share/tessdata
     language: eng
   upload-dir: uploads/receipts
+
+# Financial Risk Detection Engine (Module 2) — thresholds bound to RiskThresholdProperties.
+# Tune these per deployment without any code change; defaults are applied when values are omitted.
+risk:
+  debt-threshold: 10000           # ₹ owed at/above which a debt risk is raised
+  overdue-settlement-count: 3     # unsettled settlements at/above which a debt risk is raised
+  budget-warn-percent: 80         # budget % → MEDIUM budget risk
+  budget-over-percent: 100        # budget % → HIGH budget risk
+  cashflow-min-elapsed-days: 5    # days into month before projecting cash flow
+  cashflow-overrun-buffer: 0.0    # extra fraction over budget before flagging (0 = strict)
+  savings-decline-percent: 25     # % drop vs recent average that flags a savings risk
+  savings-gap-days: 45            # days without saving that constitutes a gap
+  subscription-min-months: 3      # months a charge must recur to count as a subscription
+  subscription-cost-threshold: 500 # ₹/month at/above which a subscription is "expensive"
+  spike-multiplier: 1.75          # weekly spend multiple over baseline that is a spike
+  spike-min-weekly-amount: 1000   # ₹ floor below which weekly spikes are ignored
+  recurring-due-window-days: 5    # remind this many days before a recurring bill is due
+  anomaly-z-score: 2.5            # z-score at/above which a transaction is anomalous
+  anomaly-high-z-score: 3.5       # z-score at/above which an anomaly is HIGH severity
+  repeated-transaction-count: 4   # identical charges in a month that flag repeated activity

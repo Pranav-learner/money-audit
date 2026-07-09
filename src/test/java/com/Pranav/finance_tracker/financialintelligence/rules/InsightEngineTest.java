@@ -4,6 +4,8 @@ import com.Pranav.finance_tracker.financialintelligence.TestFixtures;
 import com.Pranav.finance_tracker.financialintelligence.dto.InsightDraft;
 import com.Pranav.finance_tracker.financialintelligence.entity.InsightType;
 import com.Pranav.finance_tracker.financialintelligence.entity.Severity;
+import com.Pranav.finance_tracker.financialintelligence.risk.FinancialRiskType;
+import com.Pranav.finance_tracker.financialintelligence.risk.rules.RiskRule;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -59,6 +61,33 @@ class InsightEngineTest {
         List<InsightDraft> drafts = engine.run(emptyContext());
 
         assertThat(drafts).extracting(InsightDraft::getRuleKey).containsExactly("OK1");
+    }
+
+    @Test
+    void excludesRiskRulesWhichBelongToTheRiskDetectionEngine() {
+        InsightRule spending = stub("SPEND", List.of(draft("SPEND1")));
+        RiskRule risk = new RiskRule() {
+            @Override
+            public String ruleKey() {
+                return "RISK";
+            }
+
+            @Override
+            public FinancialRiskType riskType() {
+                return FinancialRiskType.BUDGET_RISK;
+            }
+
+            @Override
+            public List<InsightDraft> evaluate(InsightContext context) {
+                return List.of(draft("RISK1"));
+            }
+        };
+
+        InsightEngine engine = new InsightEngine(List.of(spending, risk));
+        List<InsightDraft> drafts = engine.run(emptyContext());
+
+        // Only the spending rule runs here; risk rules are executed by the RiskDetectionEngine.
+        assertThat(drafts).extracting(InsightDraft::getRuleKey).containsExactly("SPEND1");
     }
 
     private InsightRule stub(String key, List<InsightDraft> result) {

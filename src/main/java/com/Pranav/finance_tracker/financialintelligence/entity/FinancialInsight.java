@@ -1,5 +1,6 @@
 package com.Pranav.finance_tracker.financialintelligence.entity;
 
+import com.Pranav.finance_tracker.financialintelligence.risk.FinancialRiskType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -57,6 +58,15 @@ public class FinancialInsight {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Severity severity;
+
+    /**
+     * Risk classification for insights produced by the Risk Detection Engine (Module 2),
+     * or {@code null} for plain spending-intelligence insights. Persisted so the API and
+     * frontend can filter/group by risk type without inspecting the rule that created it.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_type", length = 40)
+    private FinancialRiskType riskType;
 
     /** Business category the insight relates to (e.g. "Food"), or {@code null} if not category-scoped. */
     @Column(length = 80)

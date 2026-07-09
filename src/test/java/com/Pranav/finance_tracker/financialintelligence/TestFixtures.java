@@ -1,13 +1,17 @@
 package com.Pranav.finance_tracker.financialintelligence;
 
 import com.Pranav.finance_tracker.analytics.dto.BudgetUsageResponse;
+import com.Pranav.finance_tracker.analytics.dto.SavingTrendItem;
 import com.Pranav.finance_tracker.category.entity.Category;
 import com.Pranav.finance_tracker.expense.entity.Expense;
+import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.user.entity.User;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -56,5 +60,27 @@ public final class TestFixtures {
                 .percentageUsed(pct)
                 .status(status)
                 .build();
+    }
+
+    public static SavingTrendItem savingTrend(int month, String amount) {
+        return SavingTrendItem.builder().month(month).amount(new BigDecimal(amount)).build();
+    }
+
+    /**
+     * A context builder pre-populated with sane defaults (a user, today's date, the current and
+     * previous months and empty collections) so risk-rule tests only set the fields they exercise.
+     */
+    public static InsightContext.InsightContextBuilder riskContext() {
+        LocalDate today = LocalDate.now();
+        return InsightContext.builder()
+                .user(user())
+                .today(today)
+                .currentMonth(YearMonth.from(today))
+                .previousMonth(YearMonth.from(today).minusMonths(1))
+                .currentMonthExpenses(List.of())
+                .previousMonthExpenses(List.of())
+                .windowExpenses(List.of())
+                .budgetUsages(List.of())
+                .savingsTrend(List.of());
     }
 }

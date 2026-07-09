@@ -30,7 +30,8 @@ public class FinancialInsightScheduler {
     public void generateNightlyInsights() {
         long startNanos = System.nanoTime();
         List<User> users = userRepository.findAll();
-        log.info("[FinancialIntelligence] Nightly insight generation started for {} user(s)", users.size());
+        log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Risk Detection) for {} user(s)",
+                users.size());
 
         int usersProcessed = 0;
         int insightsGenerated = 0;

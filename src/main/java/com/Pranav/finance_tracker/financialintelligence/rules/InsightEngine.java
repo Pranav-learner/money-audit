@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.financialintelligence.rules;
 
 import com.Pranav.finance_tracker.financialintelligence.dto.InsightDraft;
+import com.Pranav.finance_tracker.financialintelligence.risk.rules.RiskRule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,11 @@ import java.util.List;
  *
  * <p>Spring injects <b>all</b> {@code InsightRule} beans, so adding a rule requires no change here.
  * A failure in one rule is logged and isolated — it never prevents the other rules from running.</p>
+ *
+ * <p>{@link RiskRule} beans are deliberately excluded here: although a risk rule <i>is</i> an
+ * {@code InsightRule}, it belongs to the Risk Detection phase and is run by the
+ * {@link com.Pranav.finance_tracker.financialintelligence.risk.service.RiskDetectionEngine}. This
+ * keeps the two phases distinct while both share the same rule contract and downstream pipeline.</p>
  */
 @Component
 @Slf4j
@@ -20,9 +26,12 @@ public class InsightEngine {
     private final List<InsightRule> rules;
 
     public InsightEngine(List<InsightRule> rules) {
-        this.rules = rules;
-        log.info("InsightEngine initialised with {} rule(s): {}", rules.size(),
-                rules.stream().map(InsightRule::ruleKey).toList());
+        // Spending-intelligence rules only; risk rules are executed by the RiskDetectionEngine.
+        this.rules = rules.stream()
+                .filter(rule -> !(rule instanceof RiskRule))
+                .toList();
+        log.info("InsightEngine initialised with {} spending rule(s): {}", this.rules.size(),
+                this.rules.stream().map(InsightRule::ruleKey).toList());
     }
 
     /**

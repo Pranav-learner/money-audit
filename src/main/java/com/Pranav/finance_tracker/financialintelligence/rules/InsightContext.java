@@ -1,6 +1,7 @@
 package com.Pranav.finance_tracker.financialintelligence.rules;
 
 import com.Pranav.finance_tracker.analytics.dto.BudgetUsageResponse;
+import com.Pranav.finance_tracker.analytics.dto.SavingTrendItem;
 import com.Pranav.finance_tracker.expense.entity.Expense;
 import com.Pranav.finance_tracker.user.entity.User;
 import lombok.Builder;
@@ -47,6 +48,23 @@ public class InsightContext {
 
     /** Date of the user's most recent savings entry, or {@code null} if they have none. */
     private final LocalDate lastSavingDate;
+
+    // ── Risk-detection data (Module 2) ──────────────────────────────────
+    // Populated once per user alongside the spending data above so risk rules incur no extra
+    // per-rule queries. All fields are optional: Module 1 rules and tests ignore them, and risk
+    // rules null-check before use.
+
+    /** Total amount the user currently owes across unsettled splits/settlements (₹), or {@code null}. */
+    private final BigDecimal totalOwed;
+
+    /** Total amount other users currently owe this user (₹), or {@code null}. */
+    private final BigDecimal totalOwedToUser;
+
+    /** Number of distinct unsettled settlements the user owes into. */
+    private final int owedSettlementCount;
+
+    /** Monthly savings totals for the current year (from AnalyticsService), or {@code null}. */
+    private final List<SavingTrendItem> savingsTrend;
 
     // ── Aggregation helpers ─────────────────────────────────────────────
 
@@ -111,5 +129,32 @@ public class InsightContext {
                     : today;
         }
         return ChronoUnit.DAYS.between(reference, today);
+    }
+
+    /** Sum of all category budget limits for the current month, or {@link BigDecimal#ZERO} if none. */
+    public BigDecimal totalBudget() {
+        if (budgetUsages == null) {
+            return BigDecimal.ZERO;
+        }
+        return budgetUsages.stream()
+                .map(BudgetUsageResponse::getBudget)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Total spend within an inclusive date range, drawn from the trailing window.
+     * Used by short-horizon rules (e.g. weekly spike detection).
+     */
+    public BigDecimal spendBetween(LocalDate startInclusive, LocalDate endInclusive) {
+        if (windowExpenses == null || startInclusive == null || endInclusive == null) {
+            return BigDecimal.ZERO;
+        }
+        return windowExpenses.stream()
+                .filter(e -> e.getExpenseDate() != null)
+                .filter(e -> !e.getExpenseDate().isBefore(startInclusive) && !e.getExpenseDate().isAfter(endInclusive))
+                .map(Expense::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
