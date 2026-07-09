@@ -10,6 +10,7 @@ import com.Pranav.finance_tracker.financialintelligence.recommendation.RecoFixtu
 import com.Pranav.finance_tracker.financialintelligence.recommendation.config.RecommendationProperties;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.dto.RecommendationDraft;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.engine.RecommendationEngine;
+import com.Pranav.finance_tracker.financialintelligence.healthscore.HealthScoreProvider;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.engine.RecommendationPriorityEngine;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.entity.FinancialRecommendation;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.entity.Priority;

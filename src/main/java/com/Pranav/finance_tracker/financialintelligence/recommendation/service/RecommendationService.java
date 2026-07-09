@@ -13,6 +13,7 @@ import com.Pranav.finance_tracker.financialintelligence.recommendation.entity.Fi
 import com.Pranav.finance_tracker.financialintelligence.recommendation.entity.Priority;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.entity.RecommendationStatus;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.mapper.RecommendationMapper;
+import com.Pranav.finance_tracker.financialintelligence.healthscore.HealthScoreProvider;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.repository.FinancialRecommendationRepository;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;

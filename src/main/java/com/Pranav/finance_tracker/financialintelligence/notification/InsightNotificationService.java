@@ -24,10 +24,12 @@ public class InsightNotificationService {
     static final String TYPE_FINANCIAL_RISK = "FINANCIAL_RISK";
     static final String TYPE_RECOMMENDATION = "FINANCIAL_RECOMMENDATION";
     static final String TYPE_FINANCIAL_GOAL = "FINANCIAL_GOAL";
+    static final String TYPE_HEALTH_SCORE = "FINANCIAL_HEALTH_SCORE";
     private static final String TITLE = "Your financial analysis is ready";
     private static final String RISK_TITLE = "Financial Risk Detected";
     private static final String RECOMMENDATION_TITLE = "New ways to save";
     private static final String GOAL_TITLE = "Goal update";
+    private static final String HEALTH_TITLE = "Financial Health Score update";
 
     private final InAppNotificationRepository notificationRepository;
 
@@ -122,6 +124,24 @@ public class InsightNotificationService {
 
         notificationRepository.save(notification);
         log.debug("Persisted goal notification for user {}: {}", userId, body);
+    }
+
+    /**
+     * Persists an in-app notification when the user's Financial Health Score drops significantly.
+     * The body is the ready-to-show message. Never sends email.
+     */
+    public void notifyHealthScore(UUID userId, String body) {
+        InAppNotification notification = InAppNotification.builder()
+                .userId(userId)
+                .title(HEALTH_TITLE)
+                .body(body)
+                .type(TYPE_HEALTH_SCORE)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
+        log.debug("Persisted health-score notification for user {}", userId);
     }
 
     private String buildBody(int count) {

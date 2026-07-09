@@ -2,7 +2,7 @@ package com.Pranav.finance_tracker.financialintelligence.forecast.service;
 
 import com.Pranav.finance_tracker.analytics.service.AnalyticsService;
 import com.Pranav.finance_tracker.financialintelligence.forecast.predictor.ForecastContext;
-import com.Pranav.finance_tracker.financialintelligence.recommendation.service.HealthScoreProvider;
+import com.Pranav.finance_tracker.financialintelligence.healthscore.HealthScoreProvider;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
 import com.Pranav.finance_tracker.user.entity.User;

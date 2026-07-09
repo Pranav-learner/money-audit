@@ -2,6 +2,7 @@ package com.Pranav.finance_tracker.financialintelligence.scheduler;
 
 import com.Pranav.finance_tracker.financialintelligence.forecast.service.ForecastService;
 import com.Pranav.finance_tracker.financialintelligence.forecast.service.GoalService;
+import com.Pranav.finance_tracker.financialintelligence.healthscore.service.HealthScoreService;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.service.RecommendationService;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
@@ -32,6 +33,7 @@ public class FinancialInsightScheduler {
     private final UserRepository userRepository;
     private final InsightContextFactory contextFactory;
     private final FinancialInsightService insightService;
+    private final HealthScoreService healthScoreService;
     private final RecommendationService recommendationService;
     private final ForecastService forecastService;
     private final GoalService goalService;
@@ -41,11 +43,12 @@ public class FinancialInsightScheduler {
     public void generateNightlyInsights() {
         long startNanos = System.nanoTime();
         List<User> users = userRepository.findAll();
-        log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Risk Detection + "
-                + "Recommendations + Forecasting + Goal Planning) for {} user(s)", users.size());
+        log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Health Score + "
+                + "Risk Detection + Recommendations + Forecasting + Goal Planning) for {} user(s)", users.size());
 
         int usersProcessed = 0;
         int insightsGenerated = 0;
+        int healthScoresGenerated = 0;
         int recommendationsGenerated = 0;
         int forecastsGenerated = 0;
         int goalsAnalysed = 0;
@@ -56,6 +59,9 @@ public class FinancialInsightScheduler {
                 // Load the user's financial data once and share it across every phase.
                 InsightContext context = contextFactory.build(user);
                 insightsGenerated += insightService.generateForUser(user, context);
+                // Health score is computed before the phases that consume it, so all stay consistent.
+                healthScoreService.generateForUser(user, context);
+                healthScoresGenerated++;
                 recommendationsGenerated += recommendationService.generateForUser(user, context);
                 forecastsGenerated += forecastService.generateForUser(user, context);
                 goalsAnalysed += goalService.analyzeGoals(user, context);
@@ -69,9 +75,9 @@ public class FinancialInsightScheduler {
 
         long executionMs = (System.nanoTime() - startNanos) / 1_000_000L;
         log.info("[FinancialIntelligence] Completed. usersProcessed={}, insightsGenerated={}, "
-                        + "recommendationsGenerated={}, forecastsGenerated={}, goalsAnalysed={}, failures={}, "
-                        + "executionMs={}",
-                usersProcessed, insightsGenerated, recommendationsGenerated, forecastsGenerated,
-                goalsAnalysed, failures, executionMs);
+                        + "healthScoresGenerated={}, recommendationsGenerated={}, forecastsGenerated={}, "
+                        + "goalsAnalysed={}, failures={}, executionMs={}",
+                usersProcessed, insightsGenerated, healthScoresGenerated, recommendationsGenerated,
+                forecastsGenerated, goalsAnalysed, failures, executionMs);
     }
 }

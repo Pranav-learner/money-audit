@@ -3,7 +3,7 @@ package com.Pranav.finance_tracker.aiassistant.tools.impl;
 import com.Pranav.finance_tracker.aiassistant.tools.FinancialTool;
 import com.Pranav.finance_tracker.aiassistant.tools.ToolKeys;
 import com.Pranav.finance_tracker.aiassistant.tools.ToolResult;
-import com.Pranav.finance_tracker.financialintelligence.recommendation.service.HealthScoreProvider;
+import com.Pranav.finance_tracker.financialintelligence.healthscore.HealthScoreProvider;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
 import com.Pranav.finance_tracker.user.entity.User;
 import lombok.RequiredArgsConstructor;

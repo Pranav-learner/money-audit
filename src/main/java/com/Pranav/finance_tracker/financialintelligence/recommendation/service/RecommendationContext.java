@@ -21,7 +21,7 @@ public class RecommendationContext {
     /** The shared, preloaded financial context (source of all expense/budget/debt/savings data). */
     private final InsightContext insight;
 
-    /** Financial health score in [0, 100] supplied by a {@link HealthScoreProvider}. */
+    /** Financial health score in [0, 100] supplied by the Health Score Engine (Module 3). */
     private final int healthScore;
 
     /** All-time total savings recorded by the user (₹). */

@@ -100,6 +100,16 @@ risk:
   anomaly-high-z-score: 3.5       # z-score at/above which an anomaly is HIGH severity
   repeated-transaction-count: 4   # identical charges in a month that flag repeated activity
 
+# Financial Health Score Engine (Module 3) — component weights bound to HealthScoreProperties.
+# Weights must sum to 100.
+healthscore:
+  budget-weight: 30              # max points from budget adherence
+  savings-weight: 30            # max points from savings behaviour
+  debt-weight: 25               # max points from debt management
+  spending-weight: 15           # max points from spending stability
+  history-retention-days: 365   # days of score history retained
+  drop-notification-points: 10  # point drop vs previous that triggers a notification
+
 # Personalized Recommendation Engine (Module 4) — thresholds bound to RecommendationProperties.
 recommendation:
   min-savings-threshold: 100      # ₹/month floor below which a saving recommendation is suppressed
