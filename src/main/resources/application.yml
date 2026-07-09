@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: money-audit
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  # File uploads (receipts / profile images -> MultipartFile)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # Spring Mail (JavaMailSender is auto-configured from these properties)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: YOUR_EMAIL@gmail.com
+    password: YOUR_APP_PASSWORD
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # Thread pool for @Scheduled report jobs
+  task:
+    scheduling:
+      pool:
+        size: 5
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+# JWT auth (consumed by JwtService)
+jwt:
+  secret: thisIsASecretKeyForFinanceTrackerProject123456
+  expiration: 86400000
+
+# Razorpay payments (consumed by RazorpayConfig / RazorpayService)
+razorpay:
+  key-id: YOUR_RAZORPAY_KEY_ID
+  key-secret: YOUR_RAZORPAY_SECRET
+  currency: INR
+
+# Cloudinary image hosting (consumed by CloudinaryConfig; falls back to demo if empty)
+cloudinary:
+  url: ${CLOUDINARY_URL:}
+
+# OCR receipt scanning (consumed by OcrService / ReceiptService)
+ocr:
+  tesseract:
+    datapath: /usr/share/tessdata
+    language: eng
+  upload-dir: uploads/receipts
