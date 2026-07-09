@@ -1,5 +1,8 @@
 package com.Pranav.finance_tracker.financialintelligence.scheduler;
 
+import com.Pranav.finance_tracker.financialintelligence.recommendation.service.RecommendationService;
+import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
+import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
 import com.Pranav.finance_tracker.financialintelligence.service.FinancialInsightService;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
@@ -13,9 +16,11 @@ import java.util.List;
 /**
  * Nightly driver for the Financial Intelligence Engine.
  *
- * <p>Runs at 02:00 every day, iterates over all users and asks the service to generate their
- * insights. Each user is processed in its own transaction (inside the service), so a failure
- * for one user is logged and isolated without aborting the whole run.</p>
+ * <p>Runs at 02:00 every day and, for each user, executes the full pipeline in order:
+ * <b>Spending Intelligence → Risk Detection → Recommendations</b>. The user's financial data is
+ * loaded <b>once</b> per night (a single {@link InsightContext}) and shared across all phases to
+ * avoid duplicate queries. Each phase runs in its own transaction (inside the respective service),
+ * so a failure for one user or one phase is logged and isolated without aborting the whole run.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -23,33 +28,40 @@ import java.util.List;
 public class FinancialInsightScheduler {
 
     private final UserRepository userRepository;
+    private final InsightContextFactory contextFactory;
     private final FinancialInsightService insightService;
+    private final RecommendationService recommendationService;
 
     /** Every night at 2 AM: {@code second minute hour day-of-month month day-of-week}. */
     @Scheduled(cron = "0 0 2 * * *")
     public void generateNightlyInsights() {
         long startNanos = System.nanoTime();
         List<User> users = userRepository.findAll();
-        log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Risk Detection) for {} user(s)",
-                users.size());
+        log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Risk Detection + "
+                + "Recommendations) for {} user(s)", users.size());
 
         int usersProcessed = 0;
         int insightsGenerated = 0;
+        int recommendationsGenerated = 0;
         int failures = 0;
 
         for (User user : users) {
             try {
-                insightsGenerated += insightService.generateForUser(user);
+                // Load the user's financial data once and share it across every phase.
+                InsightContext context = contextFactory.build(user);
+                insightsGenerated += insightService.generateForUser(user, context);
+                recommendationsGenerated += recommendationService.generateForUser(user, context);
                 usersProcessed++;
             } catch (Exception ex) {
                 failures++;
-                log.error("[FinancialIntelligence] Failed generating insights for user {}: {}",
+                log.error("[FinancialIntelligence] Failed processing user {}: {}",
                         user.getId(), ex.getMessage(), ex);
             }
         }
 
         long executionMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        log.info("[FinancialIntelligence] Completed. usersProcessed={}, insightsGenerated={}, failures={}, executionMs={}",
-                usersProcessed, insightsGenerated, failures, executionMs);
+        log.info("[FinancialIntelligence] Completed. usersProcessed={}, insightsGenerated={}, "
+                        + "recommendationsGenerated={}, failures={}, executionMs={}",
+                usersProcessed, insightsGenerated, recommendationsGenerated, failures, executionMs);
     }
 }

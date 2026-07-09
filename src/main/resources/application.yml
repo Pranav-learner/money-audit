@@ -99,3 +99,14 @@ risk:
   anomaly-z-score: 2.5            # z-score at/above which a transaction is anomalous
   anomaly-high-z-score: 3.5       # z-score at/above which an anomaly is HIGH severity
   repeated-transaction-count: 4   # identical charges in a month that flag repeated activity
+
+# Personalized Recommendation Engine (Module 4) — thresholds bound to RecommendationProperties.
+recommendation:
+  min-savings-threshold: 100      # ₹/month floor below which a saving recommendation is suppressed
+  max-recommendations-per-user: 8 # cap on active recommendations surfaced per user
+  confidence-threshold: 0.5       # drop recommendations below this confidence
+  priority-threshold: 0.0         # minimum composite priority score (0–100) to keep a recommendation
+  expiration-days: 30             # days a recommendation stays ACTIVE
+  top-count: 3                    # number of "top" recommendations for /top and dashboard
+  emergency-fund-months: 6        # months of spending used as the emergency-fund target
+  target-savings-rate: 0.20       # savings-rate goal used by the savings recommendation

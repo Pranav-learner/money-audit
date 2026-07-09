@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,19 @@ class InsightNotificationServiceTest {
         ArgumentCaptor<InAppNotification> captor = ArgumentCaptor.forClass(InAppNotification.class);
         verify(notificationRepository).save(captor.capture());
         assertThat(captor.getValue().getBody()).isEqualTo("We found 1 issue that require your attention.");
+    }
+
+    @Test
+    void recommendationNotificationQuantifiesTheOpportunity() {
+        UUID userId = UUID.randomUUID();
+
+        service.notifyRecommendations(userId, 3, new BigDecimal("4700"));
+
+        ArgumentCaptor<InAppNotification> captor = ArgumentCaptor.forClass(InAppNotification.class);
+        verify(notificationRepository).save(captor.capture());
+        InAppNotification saved = captor.getValue();
+        assertThat(saved.getType()).isEqualTo(InsightNotificationService.TYPE_RECOMMENDATION);
+        assertThat(saved.getBody()).isEqualTo("We found 3 opportunities that could save you ₹4,700 every month.");
     }
 
     @Test

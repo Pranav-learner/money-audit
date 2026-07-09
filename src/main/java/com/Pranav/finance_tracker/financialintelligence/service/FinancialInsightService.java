@@ -57,10 +57,21 @@ public class FinancialInsightService {
      *
      * @return the number of newly persisted insights
      */
+    /** Convenience entry point that builds the context itself. */
     @Transactional
     public int generateForUser(User user) {
-        InsightContext context = contextFactory.build(user);
+        return generateForUser(user, contextFactory.build(user));
+    }
 
+    /**
+     * Generates insights for a user from an already-built {@link InsightContext}. The nightly
+     * scheduler uses this overload so a user's financial data is loaded once and shared across the
+     * spending-intelligence, risk and recommendation phases.
+     *
+     * @return the number of newly persisted insights
+     */
+    @Transactional
+    public int generateForUser(User user, InsightContext context) {
         // Execution flow: Spending Intelligence → Risk Detection → persist → notify.
         // Both phases share the one preloaded context, so risk detection adds no extra scans.
         List<InsightDraft> drafts = new ArrayList<>();
