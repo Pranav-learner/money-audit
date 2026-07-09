@@ -59,6 +59,18 @@ class InsightNotificationServiceTest {
     }
 
     @Test
+    void goalNotificationUsesGoalTypeAndBody() {
+        UUID userId = UUID.randomUUID();
+
+        service.notifyGoalUpdate(userId, "You're ahead of schedule for your Laptop goal.");
+
+        ArgumentCaptor<InAppNotification> captor = ArgumentCaptor.forClass(InAppNotification.class);
+        verify(notificationRepository).save(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo(InsightNotificationService.TYPE_FINANCIAL_GOAL);
+        assertThat(captor.getValue().getBody()).contains("ahead of schedule");
+    }
+
+    @Test
     void insightsReadyNotificationUsesGenericTitle() {
         UUID userId = UUID.randomUUID();
 
