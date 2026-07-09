@@ -1,5 +1,7 @@
 package com.Pranav.finance_tracker.financialintelligence.scheduler;
 
+import com.Pranav.finance_tracker.financialintelligence.forecast.service.ForecastService;
+import com.Pranav.finance_tracker.financialintelligence.forecast.service.GoalService;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.service.RecommendationService;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
@@ -31,6 +33,8 @@ public class FinancialInsightScheduler {
     private final InsightContextFactory contextFactory;
     private final FinancialInsightService insightService;
     private final RecommendationService recommendationService;
+    private final ForecastService forecastService;
+    private final GoalService goalService;
 
     /** Every night at 2 AM: {@code second minute hour day-of-month month day-of-week}. */
     @Scheduled(cron = "0 0 2 * * *")
@@ -38,11 +42,13 @@ public class FinancialInsightScheduler {
         long startNanos = System.nanoTime();
         List<User> users = userRepository.findAll();
         log.info("[FinancialIntelligence] Nightly run started (Spending Intelligence + Risk Detection + "
-                + "Recommendations) for {} user(s)", users.size());
+                + "Recommendations + Forecasting + Goal Planning) for {} user(s)", users.size());
 
         int usersProcessed = 0;
         int insightsGenerated = 0;
         int recommendationsGenerated = 0;
+        int forecastsGenerated = 0;
+        int goalsAnalysed = 0;
         int failures = 0;
 
         for (User user : users) {
@@ -51,6 +57,8 @@ public class FinancialInsightScheduler {
                 InsightContext context = contextFactory.build(user);
                 insightsGenerated += insightService.generateForUser(user, context);
                 recommendationsGenerated += recommendationService.generateForUser(user, context);
+                forecastsGenerated += forecastService.generateForUser(user, context);
+                goalsAnalysed += goalService.analyzeGoals(user, context);
                 usersProcessed++;
             } catch (Exception ex) {
                 failures++;
@@ -61,7 +69,9 @@ public class FinancialInsightScheduler {
 
         long executionMs = (System.nanoTime() - startNanos) / 1_000_000L;
         log.info("[FinancialIntelligence] Completed. usersProcessed={}, insightsGenerated={}, "
-                        + "recommendationsGenerated={}, failures={}, executionMs={}",
-                usersProcessed, insightsGenerated, recommendationsGenerated, failures, executionMs);
+                        + "recommendationsGenerated={}, forecastsGenerated={}, goalsAnalysed={}, failures={}, "
+                        + "executionMs={}",
+                usersProcessed, insightsGenerated, recommendationsGenerated, forecastsGenerated,
+                goalsAnalysed, failures, executionMs);
     }
 }

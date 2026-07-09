@@ -110,3 +110,12 @@ recommendation:
   top-count: 3                    # number of "top" recommendations for /top and dashboard
   emergency-fund-months: 6        # months of spending used as the emergency-fund target
   target-savings-rate: 0.20       # savings-rate goal used by the savings recommendation
+
+# Forecasting & Financial Planning Engine (Module 5) — bound to ForecastProperties.
+forecast:
+  forecast-window-months: 6            # trailing months used for prediction baselines
+  goal-confidence-threshold: 0.5       # success probability at/below which a goal is at-risk
+  max-goal-duration-months: 120        # longest realistic target horizon the planner suggests
+  prediction-history-days: 90          # days of forecast history retained per type
+  notification-progress-threshold: 0.8 # goal progress fraction that triggers a positive nudge
+  goal-delay-notification-months: 2    # projected delay (months) beyond which the user is warned

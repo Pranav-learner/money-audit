@@ -23,9 +23,11 @@ public class InsightNotificationService {
     static final String TYPE_FINANCIAL_INSIGHT = "FINANCIAL_INSIGHT";
     static final String TYPE_FINANCIAL_RISK = "FINANCIAL_RISK";
     static final String TYPE_RECOMMENDATION = "FINANCIAL_RECOMMENDATION";
+    static final String TYPE_FINANCIAL_GOAL = "FINANCIAL_GOAL";
     private static final String TITLE = "Your financial analysis is ready";
     private static final String RISK_TITLE = "Financial Risk Detected";
     private static final String RECOMMENDATION_TITLE = "New ways to save";
+    private static final String GOAL_TITLE = "Goal update";
 
     private final InAppNotificationRepository notificationRepository;
 
@@ -102,6 +104,24 @@ public class InsightNotificationService {
         notificationRepository.save(notification);
         log.debug("Persisted recommendation notification for user {} ({} opportunities, {}/mo)",
                 userId, opportunityCount, MoneyFormatter.rupees(saving));
+    }
+
+    /**
+     * Persists a goal-related in-app notification (progress, ahead-of-schedule or delay). The body
+     * is the ready-to-show message. Never sends email.
+     */
+    public void notifyGoalUpdate(UUID userId, String body) {
+        InAppNotification notification = InAppNotification.builder()
+                .userId(userId)
+                .title(GOAL_TITLE)
+                .body(body)
+                .type(TYPE_FINANCIAL_GOAL)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
+        log.debug("Persisted goal notification for user {}: {}", userId, body);
     }
 
     private String buildBody(int count) {

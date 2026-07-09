@@ -1,6 +1,8 @@
 package com.Pranav.finance_tracker.financialintelligence.scheduler;
 
 import com.Pranav.finance_tracker.financialintelligence.TestFixtures;
+import com.Pranav.finance_tracker.financialintelligence.forecast.service.ForecastService;
+import com.Pranav.finance_tracker.financialintelligence.forecast.service.GoalService;
 import com.Pranav.finance_tracker.financialintelligence.recommendation.service.RecommendationService;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContext;
 import com.Pranav.finance_tracker.financialintelligence.rules.InsightContextFactory;
@@ -28,6 +30,8 @@ class FinancialInsightSchedulerTest {
     @Mock private InsightContextFactory contextFactory;
     @Mock private FinancialInsightService insightService;
     @Mock private RecommendationService recommendationService;
+    @Mock private ForecastService forecastService;
+    @Mock private GoalService goalService;
 
     @InjectMocks private FinancialInsightScheduler scheduler;
 
@@ -46,6 +50,10 @@ class FinancialInsightSchedulerTest {
         verify(insightService).generateForUser(eq(b), any());
         verify(recommendationService).generateForUser(eq(a), any());
         verify(recommendationService).generateForUser(eq(b), any());
+        verify(forecastService).generateForUser(eq(a), any());
+        verify(forecastService).generateForUser(eq(b), any());
+        verify(goalService).analyzeGoals(eq(a), any());
+        verify(goalService).analyzeGoals(eq(b), any());
     }
 
     @Test
