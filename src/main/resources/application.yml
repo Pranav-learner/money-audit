@@ -119,3 +119,15 @@ forecast:
   prediction-history-days: 90          # days of forecast history retained per type
   notification-progress-threshold: 0.8 # goal progress fraction that triggers a positive nudge
   goal-delay-notification-months: 2    # projected delay (months) beyond which the user is warned
+
+# AI Financial Assistant (Final Module) — bound to AiAssistantProperties.
+# The default 'template' provider is fully offline and never invents numbers. Swap `provider` to a
+# generative adapter (openai/anthropic/azure/google) without any orchestration code change.
+ai:
+  provider: template
+  model: money-audit-assistant
+  temperature: 0.2
+  max-tokens: 600
+  request-timeout-ms: 15000
+  conversation-history-size: 10
+  tool-logging-enabled: true
