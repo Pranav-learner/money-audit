@@ -52,6 +52,12 @@ public class ExpenseController {
         );
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable("id") UUID id) {
+        User user = securityUtils.getCurrentUser();
+        return ResponseEntity.ok(expenseService.getExpenseById(id, user));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseResponse> updateExpense(
             @PathVariable ("id") UUID id,

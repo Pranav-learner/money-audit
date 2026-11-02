@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface GroupInvitationRepository extends JpaRepository<GroupInvitation, UUID> {
-    List<GroupInvitation> findByInvitedUserAndStatus(User user, GroupInvitation.InvitationStatus status);
+    @org.springframework.data.jpa.repository.Query("SELECT gi FROM GroupInvitation gi JOIN FETCH gi.group JOIN FETCH gi.invitedBy WHERE gi.invitedUser = :user AND gi.status = :status")
+    List<GroupInvitation> findByInvitedUserAndStatus(@org.springframework.data.repository.query.Param("user") User user, @org.springframework.data.repository.query.Param("status") GroupInvitation.InvitationStatus status);
     Optional<GroupInvitation> findByGroupAndInvitedUserAndStatus(Group group, User user, GroupInvitation.InvitationStatus status);
 }

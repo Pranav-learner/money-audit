@@ -38,19 +38,21 @@ public class DirectExpenseService {
         User otherUser;
         if (request.getFriendId() != null) {
             otherUser = userRepository.findById(request.getFriendId())
-                    .orElseThrow(() -> new RuntimeException("No user found with id: " + request.getFriendId()));
-        } else {
+                    .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("No user found with id: " + request.getFriendId()));
+        } else if (request.getOtherUserPhone() != null) {
             otherUser = userRepository.findByPhone(request.getOtherUserPhone())
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException(
                             "No user found with phone: " + request.getOtherUserPhone()));
+        } else {
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("friendId or otherUserPhone must be provided");
         }
 
         if (currentUser.getId().equals(otherUser.getId())) {
-            throw new RuntimeException("Cannot create expense with yourself");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Cannot create expense with yourself");
         }
 
         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Total amount must be positive");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Total amount must be positive");
         }
 
         User payer = currentUser;

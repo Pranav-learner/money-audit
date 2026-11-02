@@ -98,6 +98,7 @@ public class GroupInvitationService {
         invitationRepository.save(invitation);
     }
 
+    @Transactional(readOnly = true)
     public List<GroupInvitation> getMyInvitations(User user) {
         return invitationRepository.findByInvitedUserAndStatus(user, GroupInvitation.InvitationStatus.PENDING);
     }

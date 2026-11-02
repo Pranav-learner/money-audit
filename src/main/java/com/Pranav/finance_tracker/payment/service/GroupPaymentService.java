@@ -39,42 +39,42 @@ public class GroupPaymentService {
         // Idempotency check
         if (request.getRequestId() != null && !request.getRequestId().isBlank()) {
             if (paymentRepository.existsByRequestId(request.getRequestId())) {
-                throw new RuntimeException("Duplicate payment request: " + request.getRequestId());
+                throw new com.Pranav.finance_tracker.exception.BadRequestException("Duplicate payment request: " + request.getRequestId());
             }
         }
 
         User fromUser = securityUtils.getCurrentUser();
 
         Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("Group not found"));
 
         User toUser = userRepository.findById(request.getToUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("User not found"));
 
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Amount must be positive");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Amount must be positive");
         }
 
         if (fromUser.getId().equals(toUser.getId())) {
-            throw new RuntimeException("Cannot pay yourself");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Cannot pay yourself");
         }
 
         if (!groupMemberRepository.existsByGroupAndUser(group, fromUser)) {
-            throw new RuntimeException("Payer is not a member of this group");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Payer is not a member of this group");
         }
         if (!groupMemberRepository.existsByGroupAndUser(group, toUser)) {
-            throw new RuntimeException("Receiver is not a member of this group");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Receiver is not a member of this group");
         }
 
         BigDecimal outstandingDebt = groupBalanceService.getDebtBetweenUsers(
                 group.getId(), fromUser.getId(), toUser.getId());
 
         if (outstandingDebt.compareTo(BigDecimal.ZERO) == 0) {
-            throw new RuntimeException("You do not owe anything to this user");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("You do not owe anything to this user");
         }
 
         if (request.getAmount().compareTo(outstandingDebt) > 0) {
-            throw new RuntimeException(
+            throw new com.Pranav.finance_tracker.exception.BadRequestException(
                     "Cannot overpay: you owe " + outstandingDebt +
                     " but tried to pay " + request.getAmount());
         }

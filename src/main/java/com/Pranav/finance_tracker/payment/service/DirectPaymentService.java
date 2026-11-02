@@ -40,7 +40,7 @@ public class DirectPaymentService {
 
         if (request.getRequestId() != null && !request.getRequestId().isBlank()) {
             if (paymentRepository.existsByRequestId(request.getRequestId())) {
-                throw new RuntimeException("Duplicate payment request: " + request.getRequestId());
+                throw new com.Pranav.finance_tracker.exception.BadRequestException("Duplicate payment request: " + request.getRequestId());
             }
         }
 
@@ -49,29 +49,31 @@ public class DirectPaymentService {
         User toUser;
         if (request.getToUserId() != null) {
             toUser = userRepository.findById(request.getToUserId())
-                    .orElseThrow(() -> new RuntimeException("No user found with id: " + request.getToUserId()));
-        } else {
+                    .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("No user found with id: " + request.getToUserId()));
+        } else if (request.getToUserPhone() != null) {
             toUser = userRepository.findByPhone(request.getToUserPhone())
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException(
                             "No user found with phone: " + request.getToUserPhone()));
+        } else {
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("toUserId or toUserPhone must be provided");
         }
 
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Amount must be positive");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Amount must be positive");
         }
 
         if (fromUser.getId().equals(toUser.getId())) {
-            throw new RuntimeException("Cannot pay yourself");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Cannot pay yourself");
         }
 
         BigDecimal debt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
 
         if (debt.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("You do not owe anything to this user");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("You do not owe anything to this user");
         }
 
         if (request.getAmount().compareTo(debt) > 0) {
-            throw new RuntimeException(
+            throw new com.Pranav.finance_tracker.exception.BadRequestException(
                     "Cannot overpay: you owe " + debt + " but tried to pay " + request.getAmount());
         }
 

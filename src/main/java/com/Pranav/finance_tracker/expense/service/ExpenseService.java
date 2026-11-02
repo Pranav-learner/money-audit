@@ -2,6 +2,7 @@ package com.Pranav.finance_tracker.expense.service;
 
 import com.Pranav.finance_tracker.category.entity.Category;
 import com.Pranav.finance_tracker.category.repository.CategoryRepository;
+import com.Pranav.finance_tracker.exception.ResourceNotFoundException;
 import com.Pranav.finance_tracker.expense.PeriodType;
 import com.Pranav.finance_tracker.expense.dto.*;
 import com.Pranav.finance_tracker.expense.entity.Expense;
@@ -95,7 +96,7 @@ public class ExpenseService {
 
         Expense expense = expenseRepository
                 .findByIdAndUser(expenseId, user)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
 
         if (request.getTitle() != null)
             expense.setTitle(request.getTitle());
@@ -120,10 +121,17 @@ public class ExpenseService {
         return mapToResponse(expense);
     }
 
+    public ExpenseResponse getExpenseById(UUID expenseId, User user) {
+        Expense expense = expenseRepository
+                .findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
+        return mapToResponse(expense);
+    }
+
     public void deleteExpense(UUID expenseId, User user) {
         Expense expense = expenseRepository
                 .findByIdAndUser(expenseId, user)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
         expenseRepository.delete(expense);
     }
 
