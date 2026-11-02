@@ -53,10 +53,10 @@ public class AuthService {
     // login
     public LoginResponse login(LoginRequest request){
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()-> new RuntimeException("user not found"));
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid credentials"));
 
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
-            throw new RuntimeException("Invalid Password");
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid credentials");
         }
 
         String token = jwtService.generateToken(

@@ -24,6 +24,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
         boolean existsByRequestId(String requestId);
 
+        boolean existsByGatewayPaymentId(String gatewayPaymentId);
+
         boolean existsByGroupId(UUID groupId);
 
         // ── Active direct payment queries (isSettled = false) ──

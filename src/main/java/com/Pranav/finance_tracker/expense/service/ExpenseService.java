@@ -50,13 +50,7 @@ public class ExpenseService {
 
         expenseRepository.save(expense);
 
-        return ExpenseResponse.builder()
-                .id(expense.getId())
-                .title(expense.getTitle())
-                .amount(expense.getAmount())
-                .expenseDate(expense.getExpenseDate())
-                .categoryName(category.getName())
-                .build();
+        return mapToResponse(expense);
     }
     public List<ExpenseResponse> getAllExpenses(User user) {
 

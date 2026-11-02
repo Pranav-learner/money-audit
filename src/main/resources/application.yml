@@ -3,19 +3,19 @@ spring:
     name: money-audit
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_db
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/finance_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           lob:
             non_contextual_creation: true
@@ -29,10 +29,10 @@ spring:
 
   # Spring Mail (JavaMailSender is auto-configured from these properties)
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: YOUR_EMAIL@gmail.com
-    password: YOUR_APP_PASSWORD
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:YOUR_EMAIL@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:YOUR_APP_PASSWORD}
     properties:
       mail:
         smtp:
@@ -47,7 +47,7 @@ spring:
         size: 5
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   servlet:
     context-path: /
 
@@ -55,19 +55,19 @@ logging:
   level:
     root: INFO
     org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.SQL: ${LOG_SQL_LEVEL:INFO}
+    org.hibernate.orm.jdbc.bind: ${LOG_BIND_LEVEL:INFO}
 
 # JWT auth (consumed by JwtService)
 jwt:
-  secret: thisIsASecretKeyForFinanceTrackerProject123456
-  expiration: 86400000
+  secret: ${JWT_SECRET:thisIsASecretKeyForFinanceTrackerProject123456}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 # Razorpay payments (consumed by RazorpayConfig / RazorpayService)
 razorpay:
-  key-id: YOUR_RAZORPAY_KEY_ID
-  key-secret: YOUR_RAZORPAY_SECRET
-  currency: INR
+  key-id: ${RAZORPAY_KEY_ID:YOUR_RAZORPAY_KEY_ID}
+  key-secret: ${RAZORPAY_KEY_SECRET:YOUR_RAZORPAY_SECRET}
+  currency: ${RAZORPAY_CURRENCY:INR}
 
 # Cloudinary image hosting (consumed by CloudinaryConfig; falls back to demo if empty)
 cloudinary:
@@ -76,9 +76,9 @@ cloudinary:
 # OCR receipt scanning (consumed by OcrService / ReceiptService)
 ocr:
   tesseract:
-    datapath: /usr/share/tessdata
-    language: eng
-  upload-dir: uploads/receipts
+    datapath: ${TESSDATA_PREFIX:/usr/share/tessdata}
+    language: ${OCR_LANGUAGE:eng}
+  upload-dir: ${RECEIPT_UPLOAD_DIR:uploads/receipts}
 
 # Financial Risk Detection Engine (Module 2) — thresholds bound to RiskThresholdProperties.
 # Tune these per deployment without any code change; defaults are applied when values are omitted.

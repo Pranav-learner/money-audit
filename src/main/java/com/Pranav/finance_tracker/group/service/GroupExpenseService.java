@@ -144,14 +144,25 @@ public class GroupExpenseService {
         BigDecimal splitAmount = total.divide(
                 BigDecimal.valueOf(participants.size()), 2, RoundingMode.HALF_UP);
 
+        BigDecimal calculatedTotal = BigDecimal.ZERO;
+        List<GroupExpenseSplit> splitEntities = new ArrayList<>();
+
         for(User user : participants) {
-            GroupExpenseSplit split = GroupExpenseSplit.builder()
+            calculatedTotal = calculatedTotal.add(splitAmount);
+            splitEntities.add(GroupExpenseSplit.builder()
                     .expense(expense)
                     .user(user)
                     .amountOwed(splitAmount)
-                    .build();
-            groupExpenseSplitRepository.save(split);
+                    .build());
         }
+
+        BigDecimal difference = total.subtract(calculatedTotal);
+        if (difference.compareTo(BigDecimal.ZERO) != 0 && !splitEntities.isEmpty()) {
+            splitEntities.get(0).setAmountOwed(
+                    splitEntities.get(0).getAmountOwed().add(difference));
+        }
+
+        groupExpenseSplitRepository.saveAll(splitEntities);
     }
 
     private void handleUnequalSplit(

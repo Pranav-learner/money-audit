@@ -97,7 +97,7 @@ public class GroupBalanceService {
             BigDecimal amount = payment.getAmount();
 
             if (fromId.equals(myId)) {
-                pairNet.merge(toId, amount.negate(), BigDecimal::add);
+                pairNet.merge(toId, amount, BigDecimal::add);
             } else if (toId.equals(myId)) {
                 pairNet.merge(fromId, amount.negate(), BigDecimal::add);
             }

@@ -71,14 +71,14 @@ public class CategoryService {
 
         Category category = categoryRepository
                 .findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("Category not found"));
 
         if (category.isSystem()) {  // System categories cannot be deleted
-            throw new RuntimeException("System categories cannot be deleted");
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("System categories cannot be deleted");
         }
 
-        if (!category.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Not allowed");
+        if (category.getUser() == null || !category.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Not allowed to delete another user's category");
         }
 
         categoryRepository.delete(category);

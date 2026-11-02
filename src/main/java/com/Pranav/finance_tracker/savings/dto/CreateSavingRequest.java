@@ -13,7 +13,9 @@ public class CreateSavingRequest {
     @NotBlank
     private String title;
 
-    @NotNull
+    @NotNull(message = "Amount is required")
+    @jakarta.validation.constraints.Positive(message = "Amount must be positive")
+    @jakarta.validation.constraints.DecimalMin(value = "0.01", message = "Amount must be at least 0.01")
     private BigDecimal amount;
 
     @NotNull

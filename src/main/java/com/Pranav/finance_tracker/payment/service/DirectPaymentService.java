@@ -13,6 +13,7 @@ import com.Pranav.finance_tracker.user.repository.UserRepository;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseRepository;
 import com.Pranav.finance_tracker.group.repository.GroupExpenseSplitRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DirectPaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -108,6 +110,19 @@ public class DirectPaymentService {
     @Transactional
     public void recordRazorpayPayment(User fromUser, User toUser, BigDecimal amount, String orderId, String paymentId,
             String note) {
+        if (paymentId != null && paymentRepository.existsByGatewayPaymentId(paymentId)) {
+            log.info("Payment with gateway ID {} has already been processed. Skipping duplicate recording.", paymentId);
+            return;
+        }
+
+        BigDecimal debt = directBalanceService.getDebtBetweenUsers(fromUser.getId(), toUser.getId());
+        if (debt.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("No outstanding debt to settle between users");
+        }
+        if (amount.compareTo(debt) > 0) {
+            throw new com.Pranav.finance_tracker.exception.BadRequestException("Payment amount (" + amount + ") exceeds outstanding debt (" + debt + ")");
+        }
+
         Payment payment = Payment.builder()
                 .fromUser(fromUser)
                 .toUser(toUser)

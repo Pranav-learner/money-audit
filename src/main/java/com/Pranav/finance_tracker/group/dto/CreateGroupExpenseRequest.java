@@ -1,9 +1,10 @@
 package com.Pranav.finance_tracker.group.dto;
 
 import com.Pranav.finance_tracker.group.enums.SplitType;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,16 +18,22 @@ import java.util.UUID;
 public class CreateGroupExpenseRequest {
     private UUID groupId;
     private UUID otherUserId; // For direct expenses
+
+    @NotBlank(message = "Title is required")
     private String title;
+
+    @NotNull(message = "Total amount is required")
+    @Positive(message = "Total amount must be positive")
+    @DecimalMin(value = "0.01", message = "Total amount must be at least 0.01")
     private BigDecimal totalAmount;
-    private LocalDate ExpenseDate;
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+
+    private LocalDate expenseDate;
+
+    @NotNull(message = "Split type is required")
     private SplitType splitType;
 
     private List<SplitDetail> splits;
     private UUID categoryId;
     private UUID paidById;
     private String receiptUrl;
-
 }

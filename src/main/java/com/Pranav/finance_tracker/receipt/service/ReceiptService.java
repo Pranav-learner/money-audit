@@ -90,9 +90,9 @@ public class ReceiptService {
         try {
             Map uploadResult = cloudinary.uploader().upload(saved, ObjectUtils.emptyMap());
             cloudinaryUrl = uploadResult.get("secure_url").toString();
-        } catch (IOException e) {
-            log.error("Failed to upload receipt to Cloudinary", e);
-            // Optionally, we can proceed with local path or fail.
+        } catch (Exception e) {
+            log.warn("Cloudinary upload failed or unconfigured; falling back to local file storage: {}", e.getMessage());
+            // Proceed with local path fallback so OCR continues
         }
 
         Receipt receipt = Receipt.builder()
@@ -241,8 +241,12 @@ public class ReceiptService {
                             ? file.getOriginalFilename().replaceAll("[^A-Za-z0-9._-]", "_")
                             : "upload");
             
-            // Resolve absolute path to avoid Tomcat temp dir issues
-            Path destination = Paths.get(uploadDir).toAbsolutePath().resolve(safeName);
+            // Resolve absolute path and prevent directory traversal
+            Path baseDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path destination = baseDir.resolve(safeName).normalize();
+            if (!destination.startsWith(baseDir)) {
+                throw new BadRequestException("Invalid file destination path");
+            }
             Files.createDirectories(destination.getParent());
 
             Files.copy(file.getInputStream(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);

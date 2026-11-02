@@ -58,7 +58,7 @@ public class RazorpayController {
 
         User fromUser = securityUtils.getCurrentUser();
         User toUser = userRepository.findById(request.getToUserId())
-                .orElseThrow(() -> new RuntimeException("Recipient not found"));
+                .orElseThrow(() -> new com.Pranav.finance_tracker.exception.ResourceNotFoundException("Recipient not found"));
 
         directPaymentService.recordRazorpayPayment(
                 fromUser,

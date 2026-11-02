@@ -55,6 +55,8 @@ public class Payment {
     private PaymentStatus status;
 
     private String gatewayOrderId;
+
+    @Column(unique = true)
     private String gatewayPaymentId;
 
     @Column(length = 512)
