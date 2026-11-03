@@ -294,13 +294,21 @@ public class ExpenseService {
 
 
     private ExpenseResponse mapToResponse(Expense expense){
+        UUID catId = expense.getCategory() != null ? expense.getCategory().getId() : null;
+        String catName = expense.getCategory() != null ? expense.getCategory().getName() : null;
+        String catIcon = expense.getCategory() != null ? expense.getCategory().getIcon() : null;
+        String dateStr = expense.getExpenseDate() != null ? expense.getExpenseDate().toString() : null;
+
         return ExpenseResponse.builder()
                 .id(expense.getId())
                 .title(expense.getTitle())
                 .amount(expense.getAmount())
                 .expenseDate(expense.getExpenseDate())
-                .categoryName(expense.getCategory().getName())
-                .icon(expense.getCategory().getIcon())
+                .date(dateStr)
+                .categoryId(catId)
+                .category(catName)
+                .categoryName(catName)
+                .icon(catIcon)
                 .description(expense.getDescription())
                 .build();
     }
