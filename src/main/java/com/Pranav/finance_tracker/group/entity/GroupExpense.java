@@ -53,6 +53,7 @@ public class GroupExpense {
 
     private LocalDateTime createdAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isSettled = false;
 

@@ -20,6 +20,8 @@ import com.Pranav.finance_tracker.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -80,20 +82,36 @@ public class GroupExpenseService {
             case PERCENTAGE -> handlePercentageSplit(expense, group, otherUser, request.getSplits());
         }
 
-        // Send Notification if group exists
+        // Send Notification after transaction commits successfully to avoid connection starvation and ghost emails
         if (group != null) {
-            List<GroupMember> members = groupMemberRepository.findByGroup(group);
-            for (GroupMember member : members) {
-                if (!member.getUser().getId().equals(currenntUser.getId())) {
-                    String subject = "New Group Expense: " + expense.getTitle();
-                    String body = String.format("Hello %s,\n\nA new expense '%s' of %.2f has been added to group '%s' by %s.",
-                            member.getUser().getName(), expense.getTitle(), expense.getTotalAmount(),
-                            group.getName(), currenntUser.getName());
-                    emailService.sendEmail(member.getUser(), subject, body);
-                }
+            final Group finalGroup = group;
+            final User finalCurrentUser = currenntUser;
+            final GroupExpense finalExpense = expense;
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendGroupExpenseNotifications(finalExpense, finalGroup, finalCurrentUser);
+                    }
+                });
+            } else {
+                sendGroupExpenseNotifications(finalExpense, finalGroup, finalCurrentUser);
             }
         }
         return expense;
+    }
+
+    private void sendGroupExpenseNotifications(GroupExpense expense, Group group, User sender) {
+        List<GroupMember> members = groupMemberRepository.findByGroup(group);
+        for (GroupMember member : members) {
+            if (!member.getUser().getId().equals(sender.getId())) {
+                String subject = "New Group Expense: " + expense.getTitle();
+                String body = String.format("Hello %s,\n\nA new expense '%s' of %.2f has been added to group '%s' by %s.",
+                        member.getUser().getName(), expense.getTitle(), expense.getTotalAmount(),
+                        group.getName(), sender.getName());
+                emailService.sendEmail(member.getUser(), subject, body);
+            }
+        }
     }
 
     private void validateUserIsGroupMember(Group group, User user) {

@@ -8,13 +8,14 @@ import com.Pranav.finance_tracker.group.repository.GroupMemberRepository;
 import com.Pranav.finance_tracker.group.repository.GroupRepository;
 import com.Pranav.finance_tracker.group.service.GroupBalanceService;
 import com.Pranav.finance_tracker.payment.entity.Payment;
-import com.Pranav.finance_tracker.payment.entity.Payment;
 import com.Pranav.finance_tracker.payment.repository.PaymentRepository;
 import com.Pranav.finance_tracker.user.entity.User;
 import com.Pranav.finance_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -91,12 +92,30 @@ public class GroupPaymentService {
 
         paymentRepository.save(payment);
 
-        // Send Notification
-        String subject = "Payment Received: " + payment.getAmount();
-        String body = String.format("Hello %s,\n\n%s has paid you %.2f in group '%s'.\nNote: %s",
-                toUser.getName(), fromUser.getName(), payment.getAmount(),
-                group.getName(), (payment.getNote() != null ? payment.getNote() : "No note"));
-        emailService.sendEmail(toUser, subject, body);
+        // Send Notification after transaction commits successfully
+        final User finalToUser = toUser;
+        final User finalFromUser = fromUser;
+        final Group finalGroup = group;
+        final Payment finalPayment = payment;
+
+        Runnable sendEmailTask = () -> {
+            String subject = "Payment Received: " + finalPayment.getAmount();
+            String body = String.format("Hello %s,\n\n%s has paid you %.2f in group '%s'.\nNote: %s",
+                    finalToUser.getName(), finalFromUser.getName(), finalPayment.getAmount(),
+                    finalGroup.getName(), (finalPayment.getNote() != null ? finalPayment.getNote() : "No note"));
+            emailService.sendEmail(finalToUser, subject, body);
+        };
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendEmailTask.run();
+                }
+            });
+        } else {
+            sendEmailTask.run();
+        }
 
         return "Payment recorded successfully";
     }

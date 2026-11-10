@@ -23,19 +23,29 @@ public class OcrService {
     @Value("${ocr.tesseract.language}")
     private String language;
 
-    private ITesseract tesseract;
-
     @PostConstruct
     void init() {
-        tesseract = new Tesseract();
         File dataDir = new File(tessDataPath);
-        if (dataDir.exists()) {
-            tesseract.setDatapath(tessDataPath);
-        } else {
+        if (!dataDir.exists()) {
             log.warn("Tesseract data path '{}' does not exist; relying on default", tessDataPath);
         }
-        tesseract.setLanguage(language);
-        tesseract.setPageSegMode(6);
+    }
+
+    /**
+     * Creates a thread-confined ITesseract instance.
+     * Tess4J's underlying C++ Tesseract engine is not thread-safe; sharing a single
+     * instance across multiple concurrent request threads causes JNI memory corruption
+     * and JVM crashes.
+     */
+    private ITesseract createTesseract() {
+        ITesseract instance = new Tesseract();
+        File dataDir = new File(tessDataPath);
+        if (dataDir.exists()) {
+            instance.setDatapath(tessDataPath);
+        }
+        instance.setLanguage(language);
+        instance.setPageSegMode(6);
+        return instance;
     }
 
     public String extractText(File imageFile) {
@@ -44,7 +54,8 @@ public class OcrService {
             if (image == null) {
                 throw new IllegalArgumentException("Could not read image: " + imageFile.getName());
             }
-            return tesseract.doOCR(image);
+            ITesseract instance = createTesseract();
+            return instance.doOCR(image);
         } catch (TesseractException | IOException e) {
             log.error("OCR failed for {}: {}", imageFile.getName(), e.getMessage());
             throw new RuntimeException("OCR processing failed: " + e.getMessage(), e);

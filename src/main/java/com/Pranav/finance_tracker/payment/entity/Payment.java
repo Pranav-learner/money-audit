@@ -64,6 +64,7 @@ public class Payment {
 
     private LocalDateTime paidAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isSettled = false;
 
